@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -79,7 +78,7 @@ func getOtxUrls(hostname string) ([]string, error) {
 		defer r.Body.Close()
 		bytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Fatal(err)
+			return nil, errors.New(fmt.Sprintf("error reading body from alienvault: %s", err.Error()))
 		}
 		o := &OTXResult{}
 		err = json.Unmarshal(bytes, o)
