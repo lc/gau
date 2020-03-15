@@ -26,6 +26,9 @@ type OTXResult struct {
 		Paged    bool   `json:"paged"`
 	} `json:"url_list"`
 }
+type CommonCrawlInfo []struct {
+	CdxAPI string `json:"cdx-api"`
+}
 
 var IncludeSubs bool
 
@@ -132,8 +135,12 @@ func getCommonCrawlURLs(domain string) ([]string, error) {
 	if !IncludeSubs {
 		wildcard = ""
 	}
+	currentApi, err := getCurrentCC()
+	if err != nil {
+		return nil, fmt.Errorf("error getting current commoncrawl url: %v", err)
+	}
 	res, err := http.Get(
-		fmt.Sprintf("http://index.commoncrawl.org/CC-MAIN-2020-10-index?url=%s%s/*&output=json", wildcard, domain),
+		fmt.Sprintf("%s?url=%s%s/*&output=json", currentApi, wildcard, domain),
 	)
 	if err != nil {
 		return nil, err
@@ -155,4 +162,26 @@ func getCommonCrawlURLs(domain string) ([]string, error) {
 		found = append(found, wrapper.URL)
 	}
 	return found, nil
+}
+func getCurrentCC() (string, error) {
+	r, err := client.Get("http://index.commoncrawl.org/collinfo.json")
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	resp, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return "", err
+	}
+	wrapper := []struct {
+		API string `json:"cdx-api"`
+	}{}
+	err = json.Unmarshal(resp, &wrapper)
+	if err != nil {
+		return "", fmt.Errorf("could not unmarshal json from CC: %s", err.Error())
+	}
+	if len(wrapper) < 1 {
+		return "", errors.New("unexpected response from commoncrawl.")
+	}
+	return wrapper[0].API, nil
 }
