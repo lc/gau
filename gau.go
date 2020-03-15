@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -30,7 +30,7 @@ type OTXResult struct {
 var IncludeSubs bool
 
 var client = &http.Client{
-	Timeout: time.Second * 20,
+	Timeout: time.Second * 15,
 }
 
 func main() {
@@ -53,12 +53,11 @@ func main() {
 type fetch func(string) ([]string, error)
 
 func Run(domain string) {
-	tmp := fmt.Sprintf("%s", strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10))
-	_ = tmp
 	fetchers := []fetch{getWaybackUrls, getCommonCrawlURLs, getOtxUrls}
 	for _, fn := range fetchers {
 		found, err := fn(domain)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 			continue
 		}
 		for _, f := range found {
@@ -72,7 +71,7 @@ func getOtxUrls(hostname string) ([]string, error) {
 	for {
 		r, err := client.Get(fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=50&page=%d", hostname, page))
 		if err != nil {
-			log.Fatalf("Error: %v", err)
+			return nil, errors.New(fmt.Sprintf("http request to OTX failed: %s", err.Error()))
 		}
 		defer r.Body.Close()
 		bytes, err := ioutil.ReadAll(r.Body)
@@ -82,7 +81,7 @@ func getOtxUrls(hostname string) ([]string, error) {
 		o := &OTXResult{}
 		err = json.Unmarshal(bytes, o)
 		if err != nil {
-			log.Fatalf("Could not decode json: %s\n", err)
+			return nil, errors.New(fmt.Sprintf("could not decode json response from alienvault: %s", err.Error()))
 		}
 		for _, url := range o.URLList {
 			urls = append(urls, url.URL)
@@ -104,18 +103,16 @@ func getWaybackUrls(hostname string) ([]string, error) {
 	tg := fmt.Sprintf("http://web.archive.org/cdx/search/cdx?url=%s%s/*&output=json&collapse=urlkey&fl=original", wildcard, hostname)
 	r, err := client.Get(tg)
 	if err != nil {
-		log.Printf("Error in http request: %v\n", err)
-		return nil, err
+		return nil, errors.New(fmt.Sprintf("http request to web.archive.org failed: %s", err.Error()))
 	}
 	defer r.Body.Close()
 	resp, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error reading body: %v\n", err)
-		return nil, err
+		return nil, errors.New(fmt.Sprintf("error reading body: %s", err.Error()))
 	}
 	err = json.Unmarshal(resp, &waybackresp)
 	if err != nil {
-		log.Printf("Error unmarshalling response: %v\n", err)
+		return nil, errors.New(fmt.Sprintf("could not decoding response from wayback machine: %s", err.Error()))
 	}
 	first := true
 	for _, result := range waybackresp {
@@ -136,7 +133,7 @@ func getCommonCrawlURLs(domain string) ([]string, error) {
 		wildcard = ""
 	}
 	res, err := http.Get(
-		fmt.Sprintf("http://index.commoncrawl.org/CC-MAIN-2019-43-index?url=%s%s/*&output=json", wildcard, domain),
+		fmt.Sprintf("http://index.commoncrawl.org/CC-MAIN-2020-10-index?url=%s%s/*&output=json", wildcard, domain),
 	)
 	if err != nil {
 		return nil, err
