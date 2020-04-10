@@ -12,6 +12,14 @@ or
 ▻ gau example.com
 ```
 
+### flags:
+```
+  -retries int
+    	amount of retries for http client (default 5)
+  -subs
+    	include subdomains of target domain
+```
+
 ### install:
 
 ```

@@ -30,6 +30,7 @@ type CommonCrawlInfo []struct {
 }
 
 var IncludeSubs bool
+var MaxRetries int
 
 var client = &http.Client{
 	Timeout: time.Second * 15,
@@ -38,6 +39,7 @@ var client = &http.Client{
 func main() {
 	var domains []string
 	flag.BoolVar(&IncludeSubs, "subs", false, "include subdomains of target domain")
+	flag.IntVar(&MaxRetries, "retries", 5, "amount of retries for http client")
 	flag.Parse()
 	if flag.NArg() > 0 {
 		domains = []string{flag.Arg(0)}
@@ -70,20 +72,35 @@ func Run(domain string) {
 func getOtxUrls(hostname string) ([]string, error) {
 	var urls []string
 	page := 0
+	retries := MaxRetries
 	for {
-		r, err := client.Get(fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=50&page=%d", hostname, page))
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("http request to OTX failed: %s", err.Error()))
-		}
-		defer r.Body.Close()
-		bytes, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("error reading body from alienvault: %s", err.Error()))
-		}
-		o := &OTXResult{}
-		err = json.Unmarshal(bytes, o)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not decode json response from alienvault: %s", err.Error()))
+		var o = &OTXResult{}
+		for retries > 0 {
+			r, err := client.Get(fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=50&page=%d", hostname, page))
+			if err != nil {
+				retries -= 1
+				if retries == 0 {
+					return nil, errors.New(fmt.Sprintf("http request to OTX failed: %s", err.Error()))
+				}
+
+			}
+			defer r.Body.Close()
+			bytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				retries -= 1
+				if retries == 0 {
+					return nil, errors.New(fmt.Sprintf("error reading body from alienvault: %s", err.Error()))
+				}
+			}
+			err = json.Unmarshal(bytes, o)
+			if err != nil {
+				retries -= 1
+				if retries == 0 {
+					return nil, errors.New(fmt.Sprintf("error in parsing JSON from alienvault: %s", err.Error()))
+				}
+			} else {
+				break
+			}
 		}
 		for _, url := range o.URLList {
 			urls = append(urls, url.URL)
@@ -101,20 +118,34 @@ func getWaybackUrls(hostname string) ([]string, error) {
 	if !IncludeSubs {
 		wildcard = ""
 	}
+	retries := MaxRetries
 	var found []string
-	tg := fmt.Sprintf("http://web.archive.org/cdx/search/cdx?url=%s%s/*&output=json&collapse=urlkey&fl=original", wildcard, hostname)
-	r, err := client.Get(tg)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("http request to web.archive.org failed: %s", err.Error()))
-	}
-	defer r.Body.Close()
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error reading body: %s", err.Error()))
-	}
-	err = json.Unmarshal(resp, &waybackresp)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("could not decoding response from wayback machine: %s", err.Error()))
+	for retries > 0 {
+		tg := fmt.Sprintf("http://web.archive.org/cdx/search/cdx?url=%s%s/*&output=json&collapse=urlkey&fl=original", wildcard, hostname)
+		r, err := client.Get(tg)
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return nil, errors.New(fmt.Sprintf("http request to web.archive.org failed: %s", err.Error()))
+			}
+		}
+		defer r.Body.Close()
+		resp, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return nil, errors.New(fmt.Sprintf("error reading body: %s", err.Error()))
+			}
+		}
+		err = json.Unmarshal(resp, &waybackresp)
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return nil, errors.New(fmt.Sprintf("could not decoding response from wayback machine: %s", err.Error()))
+			}
+		} else {
+			break
+		}
 	}
 	first := true
 	for _, result := range waybackresp {
@@ -138,13 +169,21 @@ func getCommonCrawlURLs(domain string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting current commoncrawl url: %v", err)
 	}
-	res, err := http.Get(
-		fmt.Sprintf("%s?url=%s%s/*&output=json", currentApi, wildcard, domain),
-	)
-	if err != nil {
-		return nil, err
+	var res = &http.Response{}
+	retries := MaxRetries
+	for retries > 0 {
+		res, err = http.Get(
+			fmt.Sprintf("%s?url=%s%s/*&output=json", currentApi, wildcard, domain),
+		)
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return nil, err
+			}
+		} else {
+			break
+		}
 	}
-
 	defer res.Body.Close()
 	sc := bufio.NewScanner(res.Body)
 
