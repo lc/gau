@@ -6,9 +6,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -29,12 +29,14 @@ type CommonCrawlInfo []struct {
 	CdxAPI string `json:"cdx-api"`
 }
 
-var IncludeSubs bool
-var MaxRetries int
-
-var client = &http.Client{
-	Timeout: time.Second * 15,
-}
+var (
+	IncludeSubs bool
+	MaxRetries  int
+	client      = &http.Client{
+		Timeout: time.Second * 15,
+	}
+	CCApi string
+)
 
 func main() {
 	var domains []string
@@ -49,6 +51,11 @@ func main() {
 			domains = append(domains, s.Text())
 		}
 	}
+	var err error
+	CCApi, err = getCurrentCC()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
 	for _, domain := range domains {
 		Run(domain)
 	}
@@ -61,7 +68,10 @@ func Run(domain string) {
 	for _, fn := range fetchers {
 		found, err := fn(domain)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			if strings.Contains(err.Error(), "cc api") {
+				continue
+			}
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			continue
 		}
 		for _, f := range found {
@@ -84,23 +94,17 @@ func getOtxUrls(hostname string) ([]string, error) {
 				}
 
 			}
-			defer r.Body.Close()
-			bytes, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				retries -= 1
-				if retries == 0 {
-					return nil, errors.New(fmt.Sprintf("error reading body from alienvault: %s", err.Error()))
-				}
-			}
-			err = json.Unmarshal(bytes, o)
+			err = json.NewDecoder(r.Body).Decode(o)
 			if err != nil {
 				retries -= 1
 				if retries == 0 {
 					return nil, errors.New(fmt.Sprintf("error in parsing JSON from alienvault: %s", err.Error()))
 				}
-			} else {
-				break
+				continue
 			}
+			r.Body.Close()
+			break
+
 		}
 		for _, url := range o.URLList {
 			urls = append(urls, url.URL)
@@ -128,24 +132,18 @@ func getWaybackUrls(hostname string) ([]string, error) {
 			if retries == 0 {
 				return nil, errors.New(fmt.Sprintf("http request to web.archive.org failed: %s", err.Error()))
 			}
+			continue
 		}
-		defer r.Body.Close()
-		resp, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			retries -= 1
-			if retries == 0 {
-				return nil, errors.New(fmt.Sprintf("error reading body: %s", err.Error()))
-			}
-		}
-		err = json.Unmarshal(resp, &waybackresp)
+		err = json.NewDecoder(r.Body).Decode(&waybackresp)
 		if err != nil {
 			retries -= 1
 			if retries == 0 {
 				return nil, errors.New(fmt.Sprintf("could not decoding response from wayback machine: %s", err.Error()))
 			}
-		} else {
-			break
+			continue
 		}
+		r.Body.Close()
+		break
 	}
 	first := true
 	for _, result := range waybackresp {
@@ -160,29 +158,29 @@ func getWaybackUrls(hostname string) ([]string, error) {
 	return found, nil
 }
 func getCommonCrawlURLs(domain string) ([]string, error) {
+	if CCApi == "" {
+		return nil, errors.New("cc api is null")
+	}
 	var found []string
 	wildcard := "*."
 	if !IncludeSubs {
 		wildcard = ""
 	}
-	currentApi, err := getCurrentCC()
-	if err != nil {
-		return nil, fmt.Errorf("error getting current commoncrawl url: %v", err)
-	}
+	var err error
 	var res = &http.Response{}
 	retries := MaxRetries
 	for retries > 0 {
 		res, err = http.Get(
-			fmt.Sprintf("%s?url=%s%s/*&output=json", currentApi, wildcard, domain),
+			fmt.Sprintf("%s?url=%s%s/*&output=json", CCApi, wildcard, domain),
 		)
 		if err != nil {
 			retries -= 1
 			if retries == 0 {
 				return nil, err
 			}
-		} else {
-			break
+			continue
 		}
+		break
 	}
 	defer res.Body.Close()
 	sc := bufio.NewScanner(res.Body)
@@ -202,22 +200,31 @@ func getCommonCrawlURLs(domain string) ([]string, error) {
 	return found, nil
 }
 func getCurrentCC() (string, error) {
-	r, err := client.Get("http://index.commoncrawl.org/collinfo.json")
-	if err != nil {
-		return "", err
-	}
-	defer r.Body.Close()
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return "", err
-	}
+	retries := MaxRetries
+	var r *http.Response
 	wrapper := []struct {
 		API string `json:"cdx-api"`
 	}{}
-	err = json.Unmarshal(resp, &wrapper)
-	if err != nil {
-		return "", fmt.Errorf("could not unmarshal json from CC: %s", err.Error())
+
+	for retries > 0 {
+		r, err := client.Get("http://index.commoncrawl.org/collinfo.json")
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return "", errors.New(fmt.Sprintf("could not make http request to commoncrawl: %s", err.Error()))
+			}
+			continue
+		}
+		err = json.NewDecoder(r.Body).Decode(&wrapper)
+		if err != nil {
+			retries -= 1
+			if retries == 0 {
+				return "", errors.New(fmt.Sprintf("could not unmarshal json from commoncrawl: %s", err.Error()))
+			}
+			continue
+		}
 	}
+	r.Body.Close()
 	if len(wrapper) < 1 {
 		return "", errors.New("unexpected response from commoncrawl.")
 	}
