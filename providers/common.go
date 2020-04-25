@@ -8,10 +8,12 @@ import (
 
 type CommonProvider struct {
 	*Config
+	apiURL string
 }
 
 type CommonResult struct {
-	URL string `json:"url"`
+	URL   string `json:"url"`
+	Error string `json:"error"`
 }
 
 type CommonPaginationResult struct {
@@ -24,16 +26,10 @@ type CommonAPIResult []struct {
 	API string `json:"cdx-api"`
 }
 
-func (c *CommonProvider) formatURL(apiURL string, domain string, page uint) string {
-	if c.IncludeSubdomains {
-		domain = "*." + domain
-	}
+func NewCommonProvider(config *Config) (Provider, error) {
+	c := CommonProvider{Config: config}
 
-	return fmt.Sprintf("%s?url=%s/*&output=json&fl=url&page=%d", apiURL, domain, page)
-}
-
-// Fetch the list of available CommonCrawl Api URLs.
-func (c *CommonProvider) getAPIs() (CommonAPIResult, error) {
+	// Fetch the list of available CommonCrawl Api URLs.
 	resp, err := c.MakeRequest("http://index.commoncrawl.org/collinfo.json")
 	if err != nil {
 		return nil, err
@@ -46,12 +42,21 @@ func (c *CommonProvider) getAPIs() (CommonAPIResult, error) {
 		return nil, err
 	}
 
-	return apiResult, nil
+	c.apiURL = apiResult[0].API
+	return &c, nil
+}
+
+func (c *CommonProvider) formatURL(domain string, page uint) string {
+	if c.IncludeSubdomains {
+		domain = "*." + domain
+	}
+
+	return fmt.Sprintf("%s?url=%s/*&output=json&fl=url&page=%d", c.apiURL, domain, page)
 }
 
 // Fetch the number of pages.
-func (c *CommonProvider) getPagination(apiURL string, domain string) (*CommonPaginationResult, error) {
-	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(apiURL, domain, 0))
+func (c *CommonProvider) getPagination(domain string) (*CommonPaginationResult, error) {
+	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(domain, 0))
 
 	resp, err := c.MakeRequest(url)
 	if err != nil {
@@ -69,18 +74,13 @@ func (c *CommonProvider) getPagination(apiURL string, domain string) (*CommonPag
 }
 
 func (c *CommonProvider) Fetch(domain string, results chan<- string) error {
-	api, err := c.getAPIs()
-	if err != nil {
-		return fmt.Errorf("failed to fetch common APIs: %s", err)
-	}
-
-	pagination, err := c.getPagination(api[0].API, domain)
+	pagination, err := c.getPagination(domain)
 	if err != nil {
 		return fmt.Errorf("failed to fetch common pagination: %s", err)
 	}
 
 	for page := uint(0); page < pagination.Pages; page++ {
-		resp, err := c.MakeRequest(c.formatURL(api[0].API, domain, page))
+		resp, err := c.MakeRequest(c.formatURL(domain, page))
 		if err != nil {
 			return fmt.Errorf("failed to fetch common results page %d: %s", page, err)
 		}
@@ -92,6 +92,11 @@ func (c *CommonProvider) Fetch(domain string, results chan<- string) error {
 				_ = resp.Body.Close()
 				return fmt.Errorf("failed to decode common results for page %d: %s", page, err)
 			}
+
+			if result.Error != "" {
+				return fmt.Errorf("received an error from common api: %s", result.Error)
+			}
+
 			results <- result.URL
 		}
 

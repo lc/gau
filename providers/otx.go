@@ -25,6 +25,10 @@ type OTXResult struct {
 
 const otxResultsLimit = 200
 
+func NewOTXProvider(config *Config) Provider {
+	return &OTXProvider{Config: config}
+}
+
 func (o *OTXProvider) formatURL(domain string, page int) string {
 	return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=%d&page=%d",
 		domain, otxResultsLimit, page,

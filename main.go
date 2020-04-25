@@ -21,18 +21,22 @@ func printResults(results <-chan string) {
 }
 
 func run(config *providers.Config, domains []string) {
-	providerList := []providers.Provider{
-		providers.Provider(&providers.WaybackProvider{Config: config}),
-		providers.Provider(&providers.OTXProvider{Config: config}),
-		providers.Provider(&providers.CommonProvider{Config: config}),
+	wayback := providers.NewWaybackProvider(config)
+	otx := providers.NewOTXProvider(config)
+	common, err := providers.NewCommonProvider(config)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to initialize Common provider:", err)
+		os.Exit(1)
 	}
 
+	providerList := []providers.Provider{wayback, otx, common}
 	results := make(chan string)
 	defer close(results)
 
 	// Handle results in background
 	go printResults(results)
 
+	exitStatus := 0
 	for _, domain := range domains {
 		// Run all providers in parallel
 		wg := sync.WaitGroup{}
@@ -43,7 +47,8 @@ func run(config *providers.Config, domains []string) {
 				defer wg.Done()
 
 				if err := provider.Fetch(domain, results); err != nil {
-					_, _ = fmt.Fprintln(os.Stderr, "An error occurred:", err)
+					exitStatus = 1
+					_, _ = fmt.Fprintln(os.Stderr, err)
 				}
 			}(provider)
 		}
@@ -51,6 +56,8 @@ func run(config *providers.Config, domains []string) {
 		// Wait for providers to finish their tasks
 		wg.Wait()
 	}
+
+	os.Exit(exitStatus)
 }
 
 func main() {

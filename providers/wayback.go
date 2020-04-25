@@ -14,6 +14,10 @@ type WaybackPaginationResult uint
 
 type WaybackResult [][]string
 
+func NewWaybackProvider(config *Config) Provider {
+	return &WaybackProvider{Config: config}
+}
+
 func (w *WaybackProvider) formatURL(domain string, page uint) string {
 	if w.IncludeSubdomains {
 		domain = "*." + domain
