@@ -17,7 +17,7 @@ type Config struct {
 
 // MakeRequest tries to make a GET request for the given URL and retries on failure.
 func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
-	for retries := int(c.MaxRetries); retries >= 0; retries-- {
+	for retries := int(c.MaxRetries); ; retries-- {
 		resp, err = c.Client.Get(url)
 		if err != nil {
 			if retries == 0 {
@@ -26,6 +26,8 @@ func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
 
 			continue
 		}
+
+		break
 	}
 
 	return

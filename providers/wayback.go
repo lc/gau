@@ -3,29 +3,55 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type WaybackProvider struct {
 	*Config
 }
 
+type WaybackPaginationResult uint
+
 type WaybackResult [][]string
 
-const waybackResultsLimit = 200
-
-func (w *WaybackProvider) formatURL(domain string, page int) string {
+func (w *WaybackProvider) formatURL(domain string, page uint) string {
 	if w.IncludeSubdomains {
 		domain = "*." + domain
 	}
 
 	return fmt.Sprintf(
-		"http://web.archive.org/cdx/search/cdx?url=%s/*&output=json&collapse=urlkey&fl=original&limit=%d&offset=%d",
-		domain, waybackResultsLimit, page*waybackResultsLimit,
+		"http://web.archive.org/cdx/search/cdx?url=%s/*&output=json&collapse=urlkey&fl=original&page=%d",
+		domain, page,
 	)
 }
 
+// Fetch the number of pages.
+func (w *WaybackProvider) getPagination(domain string) (WaybackPaginationResult, error) {
+	url := fmt.Sprintf("%s&showNumPages=true", w.formatURL(domain, 0))
+
+	resp, err := w.MakeRequest(url)
+	if err != nil {
+		return 0, err
+	}
+
+	defer resp.Body.Close()
+
+	var paginationResult WaybackPaginationResult
+	if err = json.NewDecoder(resp.Body).Decode(&paginationResult); err != nil {
+		return 0, err
+	}
+
+	time.Sleep(time.Millisecond * 300)
+	return paginationResult, nil
+}
+
 func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
-	for page := 0; ; page++ {
+	pages, err := w.getPagination(domain)
+	if err != nil {
+		return err
+	}
+
+	for page := uint(0); page < uint(pages); page++ {
 		resp, err := w.MakeRequest(w.formatURL(domain, page))
 		if err != nil {
 			return err
@@ -44,10 +70,6 @@ func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
 			if i != 0 {
 				results <- entry[0]
 			}
-		}
-
-		if len(result) < waybackResultsLimit {
-			break
 		}
 	}
 
