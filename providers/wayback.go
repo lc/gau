@@ -48,19 +48,19 @@ func (w *WaybackProvider) getPagination(domain string) (WaybackPaginationResult,
 func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
 	pages, err := w.getPagination(domain)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch wayback pagination: %s", err)
 	}
 
 	for page := uint(0); page < uint(pages); page++ {
 		resp, err := w.MakeRequest(w.formatURL(domain, page))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch wayback results page %d: %s", page, err)
 		}
 
 		var result WaybackResult
 		if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			_ = resp.Body.Close()
-			return err
+			return fmt.Errorf("failed to decode wayback resuts for page %d: %s", page, err)
 		}
 
 		_ = resp.Body.Close()

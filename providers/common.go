@@ -71,18 +71,18 @@ func (c *CommonProvider) getPagination(apiURL string, domain string) (*CommonPag
 func (c *CommonProvider) Fetch(domain string, results chan<- string) error {
 	api, err := c.getAPIs()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch common APIs: %s", err)
 	}
 
 	pagination, err := c.getPagination(api[0].API, domain)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch common pagination: %s", err)
 	}
 
 	for page := uint(0); page < pagination.Pages; page++ {
 		resp, err := c.MakeRequest(c.formatURL(api[0].API, domain, page))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch common results page %d: %s", page, err)
 		}
 
 		sc := bufio.NewScanner(resp.Body)
@@ -90,7 +90,7 @@ func (c *CommonProvider) Fetch(domain string, results chan<- string) error {
 			var result CommonResult
 			if err := json.Unmarshal(sc.Bytes(), &result); err != nil {
 				_ = resp.Body.Close()
-				return err
+				return fmt.Errorf("failed to decode common results for page %d: %s", page, err)
 			}
 			results <- result.URL
 		}
