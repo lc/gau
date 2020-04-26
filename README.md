@@ -14,7 +14,9 @@ or
 
 ### flags:
 ```
-  -retries int
+  -providers string
+    	providers to fetch urls for (default "wayback,otx,commoncrawl")
+  -retries uint
     	amount of retries for http client (default 5)
   -subs
     	include subdomains of target domain
