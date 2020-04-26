@@ -8,11 +8,11 @@ import (
 type Provider interface {
 	Fetch(string, chan<- string) error
 }
-
 type Config struct {
 	MaxRetries        uint
 	IncludeSubdomains bool
 	Client            *http.Client
+	Providers         []string
 }
 
 // MakeRequest tries to make a GET request for the given URL and retries on failure.

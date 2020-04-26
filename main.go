@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,15 +22,26 @@ func printResults(results <-chan string) {
 }
 
 func run(config *providers.Config, domains []string) {
-	wayback := providers.NewWaybackProvider(config)
-	otx := providers.NewOTXProvider(config)
-	common, err := providers.NewCommonProvider(config)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to initialize Common provider:", err)
-		os.Exit(1)
+	var providerList []providers.Provider
+
+	for _, toUse := range config.Providers {
+		switch toUse {
+		case "wayback":
+			wayback := providers.NewWaybackProvider(config)
+			providerList = append(providerList, wayback)
+		case "otx":
+			otx := providers.NewOTXProvider(config)
+			providerList = append(providerList, otx)
+		case "commoncrawl":
+			common, err := providers.NewCommonProvider(config)
+			if err == nil {
+				providerList = append(providerList, common)
+			}
+		default:
+			fmt.Fprintf(os.Stderr, "Error: %s is not a valid provider.\n", toUse)
+		}
 	}
 
-	providerList := []providers.Provider{wayback, otx, common}
 	results := make(chan string)
 	defer close(results)
 
@@ -65,6 +77,7 @@ func main() {
 
 	includeSubs := flag.Bool("subs", false, "include subdomains of target domain")
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
+	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
 
 	flag.Parse()
 
@@ -76,7 +89,6 @@ func main() {
 			domains = append(domains, s.Text())
 		}
 	}
-
 	config := providers.Config{
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
@@ -89,7 +101,7 @@ func main() {
 				TLSHandshakeTimeout: 5 * time.Second,
 			},
 		},
+		Providers: strings.Split(*useProviders, ","),
 	}
-
 	run(&config, domains)
 }
