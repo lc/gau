@@ -23,16 +23,15 @@ or
 ```
 
 ### install:
-
 ```
-▻ git clone https://github.com/lc/gau && cd gau
-▻ go build -o $GOPATH/bin/gau gau.go
+▻ go get -u github.com/lc/gau
 ```
 
 or
 
 ```
-▻ go get -u github.com/lc/gau
+▻ git clone https://github.com/lc/gau && cd gau
+▻ go build -o $GOPATH/bin/gau main.go
 ```
 
 ## Useful?
