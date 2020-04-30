@@ -1,7 +1,7 @@
 # getallurls (gau)
 Fetch known URLs from AlienVault's [Open Threat Exchange](https://otx.alienvault.com), the Wayback Machine, and Common Crawl. Originally built as a microservice.
 
-### usage:
+## usage:
 ```
 ▻ printf 'example.com' | gau
 ```
@@ -12,7 +12,7 @@ or
 ▻ gau example.com
 ```
 
-### flags:
+## flags:
 ```
   -providers string
     	providers to fetch urls for (default "wayback,otx,commoncrawl")
@@ -22,16 +22,18 @@ or
     	include subdomains of target domain
 ```
 
-### install:
+## installation:
+### from source:
 ```
-▻ go get -u github.com/lc/gau
+▻ GO111MODULE=on go get -u -v github.com/lc/gau
 ```
 
-or
+### from binary:
+You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
-```
-▻ git clone https://github.com/lc/gau && cd gau
-▻ go build -o $GOPATH/bin/gau main.go
+```bash
+▻ tar xvf gau-linux-amd64.tar
+▻ mv gau-linux-amd64 /usr/bin/gau
 ```
 
 ## Useful?
