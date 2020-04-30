@@ -1,5 +1,5 @@
 # getallurls (gau)
-Fetch known URLs from AlienVault's [Open Threat Exchange](https://otx.alienvault.com), the Wayback Machine, and Common Crawl. Originally built as a microservice.
+Fetch known URLs from AlienVault's [Open Threat Exchange](https://otx.alienvault.com), the Wayback Machine, and Common Crawl. Inspired by @tomnomnom's [waybackurls](https://github.com/tomnomnom/waybackurls).
 
 ## usage:
 ```
