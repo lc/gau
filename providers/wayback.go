@@ -64,7 +64,7 @@ func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
 		var result WaybackResult
 		if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			_ = resp.Body.Close()
-			return fmt.Errorf("failed to decode wayback resuts for page %d: %s", page, err)
+			return fmt.Errorf("failed to decode wayback results for page %d: %s", page, err)
 		}
 
 		_ = resp.Body.Close()
