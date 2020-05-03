@@ -79,7 +79,7 @@ func run(config *providers.Config, domains []string) {
 
 func main() {
 	var domains []string
-	verbose := flag.Bool("v", false, "verbose mode")
+	verbose := flag.Bool("v", false, "enable verbose mode")
 	includeSubs := flag.Bool("subs", false, "include subdomains of target domain")
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
