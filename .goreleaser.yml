@@ -1,0 +1,23 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - binary: gau
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - 386
+archives:
+  - id: tgz
+    format: tar.gz
+    replacements:
+        darwin: macOS
+    format_overrides:
+        - goos: windows
+          format: zip
+
+signs:
+  - artifacts: checksum

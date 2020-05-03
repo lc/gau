@@ -14,6 +14,10 @@ import (
 	"github.com/lc/gau/providers"
 )
 
+const (
+	Version = `1.0.1`
+)
+
 // printResults just received fetched URLs and print them.
 func printResults(results <-chan string) {
 	for result := range results {
@@ -59,8 +63,9 @@ func run(config *providers.Config, domains []string) {
 				defer wg.Done()
 
 				if err := provider.Fetch(domain, results); err != nil {
-					exitStatus = 1
-					_, _ = fmt.Fprintln(os.Stderr, err)
+					if config.Verbose {
+						_, _ = fmt.Fprintln(os.Stderr, err)
+					}
 				}
 			}(provider)
 		}
@@ -74,12 +79,17 @@ func run(config *providers.Config, domains []string) {
 
 func main() {
 	var domains []string
-
+	verbose := flag.Bool("v", false, "verbose mode")
 	includeSubs := flag.Bool("subs", false, "include subdomains of target domain")
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
-
+	version := flag.Bool("version", false, "show gau version")
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("ffuf version: %s\n", Version)
+		os.Exit(0)
+	}
 
 	if flag.NArg() > 0 {
 		domains = flag.Args()
@@ -90,6 +100,7 @@ func main() {
 		}
 	}
 	config := providers.Config{
+		Verbose:           *verbose,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
 		Client: &http.Client{

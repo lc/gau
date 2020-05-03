@@ -9,6 +9,7 @@ type Provider interface {
 	Fetch(string, chan<- string) error
 }
 type Config struct {
+	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
 	Client            *http.Client
