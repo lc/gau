@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = `1.0.1`
+	Version = `1.0.2`
 )
 
 // printResults just received fetched URLs and print them.

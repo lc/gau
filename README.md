@@ -41,7 +41,7 @@ $ GO111MODULE=on go get -u -v github.com/lc/gau
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
 ```bash
-$ tar xvf gau_1.0.1_linux_amd64.tar.gz
+$ tar xvf gau_1.0.2_linux_amd64.tar.gz
 $ mv gau /usr/bin/gau
 ```
 
