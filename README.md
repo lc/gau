@@ -28,6 +28,8 @@ $ gau example.com -h
 | `-providers` | providers to fetch urls from | `gau -providers wayback example.com` |
 | `-retries` | amount of retries for http client | `gau -retries 7 example.com` |
 | `-subs` | include subdomains of target domain | `gau -subs example.com` |
+| `-v` | enable verbose mode (show errors) | `gau -v` |
+| `-version` | show gau version | `gau -version` |
 
 
 
