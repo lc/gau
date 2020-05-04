@@ -87,7 +87,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Printf("ffuf version: %s\n", Version)
+		fmt.Printf("gau version: %s\n", Version)
 		os.Exit(0)
 	}
 
