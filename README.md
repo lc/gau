@@ -7,6 +7,7 @@ getallurls (gau) fetches known URLs from AlienVault's [Open Threat Exchange](htt
 # Resources
 - [Usage](#usage)
 - [Installation](#installation)
+- [ohmyzsh note](#ohmyzsh-note)
 
 ## Usage:
 Examples:
