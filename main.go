@@ -17,10 +17,6 @@ import (
 	"github.com/lc/gau/providers"
 )
 
-const (
-	Version = `1.0.3`
-)
-
 func run(config *providers.Config, domains []string) {
 	var providerList []providers.Provider
 
@@ -100,7 +96,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Printf("gau version: %s\n", Version)
+		fmt.Printf("gau version: %s\n", providers.Version)
 		os.Exit(0)
 	}
 
