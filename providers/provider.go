@@ -14,6 +14,8 @@ type Config struct {
 	IncludeSubdomains bool
 	Client            *http.Client
 	Providers         []string
+	Output            string
+	JSON              bool
 }
 
 // MakeRequest tries to make a GET request for the given URL and retries on failure.

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -11,19 +13,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lc/gau/output"
 	"github.com/lc/gau/providers"
 )
 
 const (
-	Version = `1.0.2`
+	Version = `1.0.3`
 )
-
-// printResults just received fetched URLs and print them.
-func printResults(results <-chan string) {
-	for result := range results {
-		fmt.Println(result)
-	}
-}
 
 func run(config *providers.Config, domains []string) {
 	var providerList []providers.Provider
@@ -48,10 +44,25 @@ func run(config *providers.Config, domains []string) {
 
 	results := make(chan string)
 	defer close(results)
-
+	var out io.Writer
 	// Handle results in background
-	go printResults(results)
-
+	if config.Output == "" {
+		out = os.Stdout
+	} else {
+		ofp, err := os.OpenFile(config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatalf("Could not open output file: %v\n", err)
+		}
+		defer ofp.Close()
+		out = ofp
+	}
+	//wwg := sync.WaitGroup{}
+	//wwg.Add(1)
+	if config.JSON {
+		go output.WriteURLsJSON(results, out)
+	} else {
+		go output.WriteURLs(results, out)
+	}
 	exitStatus := 0
 	for _, domain := range domains {
 		// Run all providers in parallel
@@ -84,6 +95,8 @@ func main() {
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
 	version := flag.Bool("version", false, "show gau version")
+	output := flag.String("o", "", "filename to write results to")
+	jsonOut := flag.Bool("json", false, "write output as json")
 	flag.Parse()
 
 	if *version {
@@ -103,6 +116,8 @@ func main() {
 		Verbose:           *verbose,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
+		Output:            *output,
+		JSON:              *jsonOut,
 		Client: &http.Client{
 			Timeout: time.Second * 15,
 			Transport: &http.Transport{
