@@ -52,8 +52,7 @@ func run(config *providers.Config, domains []string) {
 		defer ofp.Close()
 		out = ofp
 	}
-	//wwg := sync.WaitGroup{}
-	//wwg.Add(1)
+
 	if config.JSON {
 		go output.WriteURLsJSON(results, out)
 	} else {

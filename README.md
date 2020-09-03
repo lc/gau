@@ -16,12 +16,13 @@ Examples:
 $ printf example.com | gau
 $ cat domains.txt | gau
 $ gau example.com
+$ gau -o example-urls.txt example.com
 ```
 
 To display the help for the tool use the `-h` flag:
 
 ```bash
-$ gau example.com -h
+$ gau -h
 ```
 
 | Flag | Description | Example |
