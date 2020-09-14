@@ -39,7 +39,6 @@ func run(config *providers.Config, domains []string) {
 	}
 
 	results := make(chan string)
-	defer close(results)
 	var out io.Writer
 	// Handle results in background
 	if config.Output == "" {
@@ -52,22 +51,28 @@ func run(config *providers.Config, domains []string) {
 		defer ofp.Close()
 		out = ofp
 	}
-
+	writewg := &sync.WaitGroup{}
+	writewg.Add(1)
 	if config.JSON {
-		go output.WriteURLsJSON(results, out)
+		go func() {
+			output.WriteURLsJSON(results, out)
+			writewg.Done()
+		}()
 	} else {
-		go output.WriteURLs(results, out)
+		go func() {
+			output.WriteURLs(results, out)
+			writewg.Done()
+		}()
 	}
 	exitStatus := 0
 	for _, domain := range domains {
 		// Run all providers in parallel
-		wg := sync.WaitGroup{}
+		wg := &sync.WaitGroup{}
 		wg.Add(len(providerList))
 
 		for _, provider := range providerList {
 			go func(provider providers.Provider) {
 				defer wg.Done()
-
 				if err := provider.Fetch(domain, results); err != nil {
 					if config.Verbose {
 						_, _ = fmt.Fprintln(os.Stderr, err)
@@ -75,11 +80,12 @@ func run(config *providers.Config, domains []string) {
 				}
 			}(provider)
 		}
-
 		// Wait for providers to finish their tasks
 		wg.Wait()
+		close(results)
+		// Wait for writer to finish
+		writewg.Wait()
 	}
-
 	os.Exit(exitStatus)
 }
 

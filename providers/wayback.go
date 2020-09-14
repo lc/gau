@@ -24,7 +24,7 @@ func (w *WaybackProvider) formatURL(domain string, page uint) string {
 	}
 
 	return fmt.Sprintf(
-		"http://web.archive.org/cdx/search/cdx?url=%s/*&output=json&collapse=urlkey&fl=original&page=%d",
+		"https://web.archive.org/cdx/search/cdx?url=%s/*&output=json&collapse=urlkey&fl=original&page=%d",
 		domain, page,
 	)
 }
@@ -45,7 +45,7 @@ func (w *WaybackProvider) getPagination(domain string) (WaybackPaginationResult,
 		return 0, err
 	}
 
-	time.Sleep(time.Millisecond * 300)
+	time.Sleep(time.Millisecond * 100)
 	return paginationResult, nil
 }
 
@@ -68,7 +68,6 @@ func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
 		}
 
 		_ = resp.Body.Close()
-
 		for i, entry := range result {
 			// Skip first result by default
 			if i != 0 {
