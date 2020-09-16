@@ -82,10 +82,10 @@ func run(config *providers.Config, domains []string) {
 		}
 		// Wait for providers to finish their tasks
 		wg.Wait()
-		close(results)
-		// Wait for writer to finish
-		writewg.Wait()
 	}
+	close(results)
+	// Wait for writer to finish
+	writewg.Wait()
 	os.Exit(exitStatus)
 }
 
