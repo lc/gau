@@ -27,7 +27,7 @@ $ gau -h
 
 | Flag | Description | Example |
 |------|-------------|---------|
-| `-providers` | providers to fetch urls from | `gau -providers wayback example.com` |
+| `-providers` | providers to fetch urls from (by default, all are used) | `gau -providers wayback,otx,commoncrawl example.com` |
 | `-retries` | amount of retries for http client | `gau -retries 7 example.com` |
 | `-subs` | include subdomains of target domain | `gau -subs example.com` |
 | `-v` | enable verbose mode (show errors) | `gau -v` |
