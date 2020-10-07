@@ -17,6 +17,7 @@ type Provider interface {
 }
 type Config struct {
 	Verbose           bool
+	RandomAgent       bool
 	MaxRetries        uint
 	IncludeSubdomains bool
 	Client            *http.Client
@@ -32,7 +33,13 @@ func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Add("User-Agent", userAgent)
+		
+		if c.RandomAgent {
+			req.Header.Set("User-Agent", getUserAgent())
+		} else {
+			req.Header.Add("User-Agent", userAgent)
+		}
+				
 		resp, err = c.Client.Do(req)
 		if err != nil {
 			if retries == 0 {
