@@ -30,7 +30,7 @@ func NewOTXProvider(config *Config) Provider {
 }
 
 func (o *OTXProvider) formatURL(domain string, page int) string {
-	return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=%d&page=%d",
+	return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/url_list?limit=%d&page=%d",
 		domain, otxResultsLimit, page,
 	)
 }
