@@ -13,36 +13,10 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"crypto/tls"
-	"math/rand"
-
+	
 	"github.com/lc/gau/output"
 	"github.com/lc/gau/providers"
 )
-
-
-	var providerList []providers.Provider
-	for _, toUse := range config.Providers {
-		switch toUse {
-		case "wayback":
-			wayback := providers.NewWaybackProvider(config)
-			providerList = append(providerList, wayback)
-		case "otx":
-			otx := providers.NewOTXProvider(config)
-			providerList = append(providerList, otx)
-		case "commoncrawl":
-			common, err := providers.NewCommonProvider(config)
-			if err == nil {
-				providerList = append(providerList, common)
-			}
-	
-	writewg := &sync.WaitGroup{}
-	writewg.Add(1)
-
-		domain:=domain
-	
-	// Wait for writer to finish
-}
 
 func run(config *providers.Config, domains []string) {
 	var providerList []providers.Provider
