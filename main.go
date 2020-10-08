@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"crypto/tls"
 	
 	"github.com/lc/gau/output"
 	"github.com/lc/gau/providers"
@@ -122,6 +123,7 @@ func main() {
 			Timeout: 5 * time.Second,
 		}).DialContext,
 		TLSHandshakeTimeout: 5 * time.Second,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
 
 	if *proxy != "" {
