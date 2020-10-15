@@ -1,14 +1,14 @@
 package providers
 
 import (
-	"net/http"
 	"math/rand"
+	"net/http"
 	"time"
 )
 
 const (
 	// Version of gau
-	Version = `1.0.5`
+	Version = `1.0.6`
 	// UserAgent for the HTTP Client
 	userAgent = "Mozilla/5.0 (compatible; gau/" + Version + "; https://github.com/lc/gau)"
 )
@@ -58,13 +58,13 @@ func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if c.RandomAgent {
 			req.Header.Set("User-Agent", getUserAgent())
 		} else {
 			req.Header.Add("User-Agent", userAgent)
 		}
-				
+
 		resp, err = c.Client.Do(req)
 		if err != nil {
 			if retries == 0 {

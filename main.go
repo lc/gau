@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -13,8 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"crypto/tls"
-	
+
 	"github.com/lc/gau/output"
 	"github.com/lc/gau/providers"
 )
@@ -98,7 +98,7 @@ func main() {
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
 	version := flag.Bool("version", false, "show gau version")
-	proxy := flag.String("p", "", "use proxy")
+	proxy := flag.String("p", "", "HTTP proxy to use")
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
 	randomAgent := flag.Bool("random-agent", false, "use random user-agent")
@@ -117,7 +117,7 @@ func main() {
 			domains = append(domains, s.Text())
 		}
 	}
-	
+
 	tr := &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout: 5 * time.Second,
@@ -134,13 +134,13 @@ func main() {
 
 	config := providers.Config{
 		Verbose:           *verbose,
-		RandomAgent:	   *randomAgent,
+		RandomAgent:       *randomAgent,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
 		Output:            *output,
 		JSON:              *jsonOut,
 		Client: &http.Client{
-			Timeout: time.Second * 15,
+			Timeout:   time.Second * 15,
 			Transport: tr,
 		},
 		Providers: strings.Split(*useProviders, ","),
