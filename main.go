@@ -8,11 +8,13 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"time"
-
+	"crypto/tls"
+	
 	"github.com/lc/gau/output"
 	"github.com/lc/gau/providers"
 )
@@ -96,8 +98,10 @@ func main() {
 	maxRetries := flag.Uint("retries", 5, "amount of retries for http client")
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
 	version := flag.Bool("version", false, "show gau version")
+	proxy := flag.String("p", "", "use proxy")
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
+	randomAgent := flag.Bool("random-agent", false, "use random user-agent")
 	flag.Parse()
 
 	if *version {
@@ -113,20 +117,31 @@ func main() {
 			domains = append(domains, s.Text())
 		}
 	}
+	
+	tr := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout: 5 * time.Second,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+	}
+
+	if *proxy != "" {
+		if p, err := url.Parse(*proxy); err == nil {
+			tr.Proxy = http.ProxyURL(p)
+		}
+	}
+
 	config := providers.Config{
 		Verbose:           *verbose,
+		RandomAgent:	   *randomAgent,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
 		Output:            *output,
 		JSON:              *jsonOut,
 		Client: &http.Client{
 			Timeout: time.Second * 15,
-			Transport: &http.Transport{
-				DialContext: (&net.Dialer{
-					Timeout: 5 * time.Second,
-				}).DialContext,
-				TLSHandshakeTimeout: 5 * time.Second,
-			},
+			Transport: tr,
 		},
 		Providers: strings.Split(*useProviders, ","),
 	}
