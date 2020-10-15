@@ -3,6 +3,7 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type OTXProvider struct {
@@ -51,7 +52,13 @@ func (o *OTXProvider) Fetch(domain string, results chan<- string) error {
 		_ = resp.Body.Close()
 
 		for _, entry := range result.URLList {
-			results <- entry.URL
+			if o.IncludeSubdomains {
+				results <- entry.URL
+			} else {
+				if strings.EqualFold(domain, entry.Hostname) {
+					results <- entry.URL
+				}
+			}
 		}
 
 		if !result.HasNext {
