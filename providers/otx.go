@@ -38,7 +38,7 @@ func (o *OTXProvider) formatURL(domain string, page int) string {
 		)
 	} else if domainutil.HasSubdomain(domain) && o.IncludeSubdomains {
 		return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/url_list?limit=%d&page=%d",
-			domain, otxResultsLimit, page,
+			domainutil.Domain(domain), otxResultsLimit, page,
 		)
 	} else {
 		return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=%d&page=%d",
