@@ -17,6 +17,7 @@ $ printf example.com | gau
 $ cat domains.txt | gau
 $ gau example.com
 $ gau -o example-urls.txt example.com
+$ gau -b png,jpg,gif example.com
 ```
 
 To display the help for the tool use the `-h` flag:
@@ -28,6 +29,7 @@ $ gau -h
 | Flag | Description | Example |
 |------|-------------|---------|
 | `-providers` | providers to fetch urls from (by default, all are used) | `gau -providers wayback,otx,commoncrawl example.com` |
+| `-b` | extensions to skip | `gau -b jpg,png,gif example.com` |
 | `-retries` | amount of retries for http client | `gau -retries 7 example.com` |
 | `-subs` | include subdomains of target domain | `gau -subs example.com` |
 | `-p` | http proxy to use | `gau -p http://localhost:8080 example.com` |
@@ -49,7 +51,7 @@ $ GO111MODULE=on go get -u -v github.com/lc/gau
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
 ```bash
-$ tar xvf gau_1.0.3_linux_amd64.tar.gz
+$ tar xvf gau_1.1.0_linux_amd64.tar.gz
 $ mv gau /usr/bin/gau
 ```
 

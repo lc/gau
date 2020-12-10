@@ -8,7 +8,7 @@ import (
 
 const (
 	// Version of gau
-	Version = `1.0.7`
+	Version = `1.1.0`
 	// UserAgent for the HTTP Client
 	userAgent = "Mozilla/5.0 (compatible; gau/" + Version + "; https://github.com/lc/gau)"
 )
