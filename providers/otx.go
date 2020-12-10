@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"github.com/bobesa/go-domain-util/domainutil"
 )
 
 type OTXProvider struct {
@@ -31,9 +32,19 @@ func NewOTXProvider(config *Config) Provider {
 }
 
 func (o *OTXProvider) formatURL(domain string, page int) string {
-	return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/url_list?limit=%d&page=%d",
-		domain, otxResultsLimit, page,
-	)
+	if !domainutil.HasSubdomain(domain) {
+		return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/url_list?limit=%d&page=%d",
+			domain, otxResultsLimit, page,
+		)
+	} else if domainutil.HasSubdomain(domain) && o.IncludeSubdomains {
+		return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/url_list?limit=%d&page=%d",
+			domainutil.Domain(domain), otxResultsLimit, page,
+		)
+	} else {
+		return fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/hostname/%s/url_list?limit=%d&page=%d",
+			domain, otxResultsLimit, page,
+		)
+	}
 }
 
 func (o *OTXProvider) Fetch(domain string, results chan<- string) error {
@@ -53,7 +64,13 @@ func (o *OTXProvider) Fetch(domain string, results chan<- string) error {
 
 		for _, entry := range result.URLList {
 			if o.IncludeSubdomains {
-				results <- entry.URL
+				if !domainutil.HasSubdomain(domain) {
+					results <- entry.URL
+				} else {
+					if strings.Contains(strings.ToLower(entry.Hostname), strings.ToLower(domain)) {
+						results <- entry.URL
+					}
+				}
 			} else {
 				if strings.EqualFold(domain, entry.Hostname) {
 					results <- entry.URL
