@@ -24,6 +24,7 @@ type Config struct {
 	IncludeSubdomains bool
 	Client            *http.Client
 	Providers         []string
+	Blacklist 		  map[string]struct{}
 	Output            string
 	JSON              bool
 }

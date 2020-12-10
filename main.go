@@ -57,12 +57,12 @@ func run(config *providers.Config, domains []string) {
 	writewg.Add(1)
 	if config.JSON {
 		go func() {
-			output.WriteURLsJSON(results, out)
+			output.WriteURLsJSON(results, out, config.Blacklist)
 			writewg.Done()
 		}()
 	} else {
 		go func() {
-			output.WriteURLs(results, out)
+			output.WriteURLs(results, out, config.Blacklist)
 			writewg.Done()
 		}()
 	}
@@ -102,6 +102,7 @@ func main() {
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
 	randomAgent := flag.Bool("random-agent", false, "use random user-agent")
+	blacklist := flag.String("b","","extensions to skip, ex: ttf,woff,svg,png,jpg")
 	flag.Parse()
 
 	if *version {
@@ -132,6 +133,11 @@ func main() {
 		}
 	}
 
+	extensions := strings.Split(*blacklist,",")
+	extMap := make(map[string]struct{})
+	for _, ext := range extensions {
+		extMap[ext] = struct{}{}
+	}
 	config := providers.Config{
 		Verbose:           *verbose,
 		RandomAgent:       *randomAgent,
@@ -139,6 +145,7 @@ func main() {
 		IncludeSubdomains: *includeSubs,
 		Output:            *output,
 		JSON:              *jsonOut,
+		Blacklist: 			extMap,
 		Client: &http.Client{
 			Timeout:   time.Second * 15,
 			Transport: tr,
