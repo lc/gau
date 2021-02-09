@@ -25,7 +25,7 @@ func WriteURLs(results <-chan string, writer io.Writer, blacklistMap map[string]
 			base := strings.Split(path.Base(u.Path),".")
 			ext := base[len(base)-1]
 			if ext != "" {
-				_, ok := blacklistMap[ext]
+				_, ok := blacklistMap[strings.ToLower(ext)]
 				if ok {
 					continue
 				}
@@ -54,7 +54,7 @@ func WriteURLsJSON(results <-chan string, writer io.Writer, blacklistMap map[str
 			base := strings.Split(path.Base(u.Path),".")
 			ext := base[len(base)-1]
 			if ext != "" {
-				_, ok := blacklistMap[ext]
+				_, ok := blacklistMap[strings.ToLower(ext)]
 				if ok {
 					continue
 				}
