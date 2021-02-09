@@ -136,7 +136,7 @@ func main() {
 	extensions := strings.Split(*blacklist,",")
 	extMap := make(map[string]struct{})
 	for _, ext := range extensions {
-		extMap[ext] = struct{}{}
+		extMap[strings.ToLower(ext)] = struct{}{}
 	}
 	config := providers.Config{
 		Verbose:           *verbose,
