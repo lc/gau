@@ -50,6 +50,17 @@ $ GO111MODULE=on go get -u -v github.com/lc/gau
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
+### From Docker:
+You can build a docker image with the following command
+```bash
+docker build -t gau .
+```
+and then run it
+```bash
+docker run gau example.com
+```
+Bear in mind that piping command (echo "example.com" | gau) will not work with the docker container
+
 ```bash
 $ tar xvf gau_1.1.0_linux_amd64.tar.gz
 $ mv gau /usr/bin/gau
