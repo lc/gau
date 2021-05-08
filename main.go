@@ -101,7 +101,6 @@ func main() {
 	proxy := flag.String("p", "", "HTTP proxy to use")
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
-	randomAgent := flag.Bool("random-agent", false, "use random user-agent")
 	blacklist := flag.String("b","","extensions to skip, ex: ttf,woff,svg,png,jpg")
 	flag.Parse()
 
@@ -140,7 +139,6 @@ func main() {
 	}
 	config := providers.Config{
 		Verbose:           *verbose,
-		RandomAgent:       *randomAgent,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
 		Output:            *output,

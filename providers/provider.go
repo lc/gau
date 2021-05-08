@@ -9,8 +9,6 @@ import (
 const (
 	// Version of gau
 	Version = `1.1.0`
-	// UserAgent for the HTTP Client
-	userAgent = "Mozilla/5.0 (compatible; gau/" + Version + "; https://github.com/lc/gau)"
 )
 
 // A generic interface for providers
@@ -19,12 +17,11 @@ type Provider interface {
 }
 type Config struct {
 	Verbose           bool
-	RandomAgent       bool
 	MaxRetries        uint
 	IncludeSubdomains bool
 	Client            *http.Client
 	Providers         []string
-	Blacklist 		  map[string]struct{}
+	Blacklist         map[string]struct{}
 	Output            string
 	JSON              bool
 }
@@ -60,11 +57,7 @@ func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
 			return nil, err
 		}
 
-		if c.RandomAgent {
-			req.Header.Set("User-Agent", getUserAgent())
-		} else {
-			req.Header.Add("User-Agent", userAgent)
-		}
+		req.Header.Set("User-Agent", getUserAgent())
 
 		resp, err = c.Client.Do(req)
 		if err != nil {
