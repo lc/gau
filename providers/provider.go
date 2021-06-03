@@ -8,7 +8,7 @@ import (
 
 const (
 	// Version of gau
-	Version = `1.1.0`
+	Version = `1.2.0`
 )
 
 // A generic interface for providers
@@ -16,6 +16,7 @@ type Provider interface {
 	Fetch(string, chan<- string) error
 }
 type Config struct {
+	Threads           uint
 	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
