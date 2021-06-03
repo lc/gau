@@ -32,7 +32,7 @@ $ gau -h
 | `-b` | extensions to skip | `gau -b jpg,png,gif example.com` |
 | `-retries` | amount of retries for http client | `gau -retries 7 example.com` |
 | `-subs` | include subdomains of target domain | `gau -subs example.com` |
-| `-t` | number of threads to use | `cat domains | gau -t 5` |
+| `-t` | number of threads to use | `gau -t 5` |
 | `-p` | http proxy to use | `gau -p http://localhost:8080 example.com` |
 | `-v` | enable verbose mode (show errors) | `gau -v` |
 | `-o` | filename to write results to | `gau -o urls.txt example.com` | 
