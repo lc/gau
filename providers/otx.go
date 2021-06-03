@@ -3,8 +3,8 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"github.com/bobesa/go-domain-util/domainutil"
+	"strings"
 )
 
 type OTXProvider struct {

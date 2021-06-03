@@ -13,6 +13,7 @@ import (
 type JSONResult struct {
 	Url string `json:"url"`
 }
+
 func WriteURLs(results <-chan string, writer io.Writer, blacklistMap map[string]struct{}) error {
 	wr := bufio.NewWriter(writer)
 	str := &strings.Builder{}
@@ -22,7 +23,7 @@ func WriteURLs(results <-chan string, writer io.Writer, blacklistMap map[string]
 			if err != nil {
 				continue
 			}
-			base := strings.Split(path.Base(u.Path),".")
+			base := strings.Split(path.Base(u.Path), ".")
 			ext := base[len(base)-1]
 			if ext != "" {
 				_, ok := blacklistMap[strings.ToLower(ext)]
@@ -51,7 +52,7 @@ func WriteURLsJSON(results <-chan string, writer io.Writer, blacklistMap map[str
 			if err != nil {
 				continue
 			}
-			base := strings.Split(path.Base(u.Path),".")
+			base := strings.Split(path.Base(u.Path), ".")
 			ext := base[len(base)-1]
 			if ext != "" {
 				_, ok := blacklistMap[strings.ToLower(ext)]
