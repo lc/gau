@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/remeh/sizedwaitgroup"
 	"io"
 	"log"
 	"net"
@@ -53,6 +54,7 @@ func run(config *providers.Config, domains []string) {
 		defer ofp.Close()
 		out = ofp
 	}
+
 	writewg := &sync.WaitGroup{}
 	writewg.Add(1)
 	if config.JSON {
@@ -66,10 +68,16 @@ func run(config *providers.Config, domains []string) {
 			writewg.Done()
 		}()
 	}
-	exitStatus := 0
+	if config.Threads > 50 {
+		config.Threads = 50
+	}
+
+	dwg := sizedwaitgroup.New(int(config.Threads))
+	wg := &sync.WaitGroup{}
+
 	for _, domain := range domains {
+		dwg.Add()
 		// Run all providers in parallel
-		wg := &sync.WaitGroup{}
 		wg.Add(len(providerList))
 
 		for _, provider := range providerList {
@@ -82,13 +90,16 @@ func run(config *providers.Config, domains []string) {
 				}
 			}(provider)
 		}
-		// Wait for providers to finish their tasks
 		wg.Wait()
+		dwg.Done()
 	}
+
+	dwg.Wait()
+
 	close(results)
+
 	// Wait for writer to finish
 	writewg.Wait()
-	os.Exit(exitStatus)
 }
 
 func main() {
@@ -99,9 +110,10 @@ func main() {
 	useProviders := flag.String("providers", "wayback,otx,commoncrawl", "providers to fetch urls for")
 	version := flag.Bool("version", false, "show gau version")
 	proxy := flag.String("p", "", "HTTP proxy to use")
+	threads := flag.Uint("t", 1, "number of threads to use")
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
-	blacklist := flag.String("b","","extensions to skip, ex: ttf,woff,svg,png,jpg")
+	blacklist := flag.String("b", "", "extensions to skip, ex: ttf,woff,svg,png,jpg")
 	flag.Parse()
 
 	if *version {
@@ -132,18 +144,19 @@ func main() {
 		}
 	}
 
-	extensions := strings.Split(*blacklist,",")
+	extensions := strings.Split(*blacklist, ",")
 	extMap := make(map[string]struct{})
 	for _, ext := range extensions {
 		extMap[strings.ToLower(ext)] = struct{}{}
 	}
 	config := providers.Config{
+		Threads:           *threads,
 		Verbose:           *verbose,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,
 		Output:            *output,
 		JSON:              *jsonOut,
-		Blacklist: 			extMap,
+		Blacklist:         extMap,
 		Client: &http.Client{
 			Timeout:   time.Second * 15,
 			Transport: tr,
