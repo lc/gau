@@ -4,12 +4,11 @@ FROM golang@sha256:ef409ff24dd3d79ec313efe88153d703fee8b80a522d294bb7908216dc7aa
 WORKDIR /app
 
 COPY . .
-RUN go mod download
-RUN go build -o ./build/gau
+RUN go mod download && go build -o ./build/gau
 
 ENTRYPOINT ["/app/gau/build/gau"]
 
-# Image: alpine:3.14.1
+# Release image: alpine:3.14.1
 FROM alpine@sha256:be9bdc0ef8e96dbc428dc189b31e2e3b05523d96d12ed627c37aa2936653258c
 
 RUN apk -U upgrade --no-cache
