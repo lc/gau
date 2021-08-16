@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"math"
 )
 
 type WaybackProvider struct {
@@ -49,13 +50,17 @@ func (w *WaybackProvider) getPagination(domain string) (WaybackPaginationResult,
 	return paginationResult, nil
 }
 
-func (w *WaybackProvider) Fetch(domain string, results chan<- string) error {
+func (w *WaybackProvider) Fetch(domain string, results chan<- string, max_pages uint) error {
 	pages, err := w.getPagination(domain)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wayback pagination: %s", err)
 	}
+	result_pages := uint(pages)
+	if max_pages != 0 {
+	    result_pages = uint(math.Min(float64(max_pages), float64(result_pages)))
+	}
 
-	for page := uint(0); page < uint(pages); page++ {
+	for page := uint(0); page < result_pages; page++ {
 		resp, err := w.MakeRequest(w.formatURL(domain, page))
 		if err != nil {
 			return fmt.Errorf("failed to fetch wayback results page %d: %s", page, err)

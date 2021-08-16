@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math"
 )
 
 type CommonProvider struct {
@@ -73,13 +74,18 @@ func (c *CommonProvider) getPagination(domain string) (*CommonPaginationResult, 
 	return &paginationResult, nil
 }
 
-func (c *CommonProvider) Fetch(domain string, results chan<- string) error {
+func (c *CommonProvider) Fetch(domain string, results chan<- string, max_pages uint) error {
 	pagination, err := c.getPagination(domain)
 	if err != nil {
 		return fmt.Errorf("failed to fetch common pagination: %s", err)
 	}
+    result_pages := uint(pagination.Pages)
+	if max_pages != 0 {
+	    result_pages = uint(math.Min(float64(max_pages), float64(result_pages)))
+	}
 
-	for page := uint(0); page < pagination.Pages; page++ {
+
+	for page := uint(0); page < result_pages; page++ {
 		resp, err := c.MakeRequest(c.formatURL(domain, page))
 		if err != nil {
 			return fmt.Errorf("failed to fetch common results page %d: %s", page, err)

@@ -83,7 +83,7 @@ func run(config *providers.Config, domains []string) {
 		for _, provider := range providerList {
 			go func(provider providers.Provider) {
 				defer wg.Done()
-				if err := provider.Fetch(domain, results); err != nil {
+				if err := provider.Fetch(domain, results, config.MaxPages); err != nil {
 					if config.Verbose {
 						_, _ = fmt.Fprintln(os.Stderr, err)
 					}
@@ -111,6 +111,7 @@ func main() {
 	version := flag.Bool("version", false, "show gau version")
 	proxy := flag.String("p", "", "HTTP proxy to use")
 	threads := flag.Uint("t", 1, "number of threads to use")
+	maxPages := flag.Uint("pages", 0, "maximum number of pages")
 	output := flag.String("o", "", "filename to write results to")
 	jsonOut := flag.Bool("json", false, "write output as json")
 	blacklist := flag.String("b", "", "extensions to skip, ex: ttf,woff,svg,png,jpg")
@@ -151,6 +152,7 @@ func main() {
 	}
 	config := providers.Config{
 		Threads:           *threads,
+		MaxPages:           *maxPages,
 		Verbose:           *verbose,
 		MaxRetries:        *maxRetries,
 		IncludeSubdomains: *includeSubs,

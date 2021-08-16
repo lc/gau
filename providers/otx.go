@@ -47,7 +47,7 @@ func (o *OTXProvider) formatURL(domain string, page int) string {
 	}
 }
 
-func (o *OTXProvider) Fetch(domain string, results chan<- string) error {
+func (o *OTXProvider) Fetch(domain string, results chan<- string, max_pages uint) error {
 	for page := 0; ; page++ {
 		resp, err := o.MakeRequest(o.formatURL(domain, page))
 		if err != nil {
@@ -79,6 +79,10 @@ func (o *OTXProvider) Fetch(domain string, results chan<- string) error {
 		}
 
 		if !result.HasNext {
+			break
+		}
+
+		if max_pages != 0 && uint(page) >= max_pages - 1 {
 			break
 		}
 	}

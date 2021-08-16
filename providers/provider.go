@@ -13,10 +13,11 @@ const (
 
 // A generic interface for providers
 type Provider interface {
-	Fetch(string, chan<- string) error
+	Fetch(string, chan<- string, uint) error
 }
 type Config struct {
 	Threads           uint
+	MaxPages           uint
 	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
