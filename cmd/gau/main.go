@@ -7,7 +7,6 @@ import (
 	"github.com/lc/gau/runner/flags"
 	log "github.com/sirupsen/logrus"
 	"io"
-	_ "net/http/pprof"
 	"os"
 	"sync"
 )
