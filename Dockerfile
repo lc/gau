@@ -4,7 +4,7 @@ FROM golang@sha256:ef409ff24dd3d79ec313efe88153d703fee8b80a522d294bb7908216dc7aa
 WORKDIR /app
 
 COPY . .
-RUN go mod download && go build -o ./build/gau
+RUN go mod download && go build -o ./build/gau ./cmd/gau
 
 ENTRYPOINT ["/app/gau/build/gau"]
 

@@ -1,23 +1,21 @@
 package output
 
 import (
-	"bufio"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/valyala/bytebufferpool"
 	"io"
 	"net/url"
 	"path"
 	"strings"
-
-	jsoniter "github.com/json-iterator/go"
 )
 
 type JSONResult struct {
 	Url string `json:"url"`
 }
 
-func WriteURLs(results <-chan string, writer io.Writer, blacklistMap map[string]struct{}) error {
-	wr := bufio.NewWriter(writer)
-	str := &strings.Builder{}
+func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}) error {
 	for result := range results {
+		buf := bytebufferpool.Get()
 		if len(blacklistMap) != 0 {
 			u, err := url.Parse(result)
 			if err != nil {
@@ -32,18 +30,18 @@ func WriteURLs(results <-chan string, writer io.Writer, blacklistMap map[string]
 				}
 			}
 		}
-		str.WriteString(result)
-		str.WriteRune('\n')
-		_, err := wr.WriteString(str.String())
+		buf.B = append(buf.B, []byte(result)...)
+		buf.B = append(buf.B, "\n"...)
+		_, err := writer.Write(buf.B)
 		if err != nil {
-			wr.Flush()
 			return err
 		}
-		str.Reset()
+		bytebufferpool.Put(buf)
 	}
-	return wr.Flush()
+	return nil
 }
-func WriteURLsJSON(results <-chan string, writer io.Writer, blacklistMap map[string]struct{}) {
+
+func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}) {
 	var jr JSONResult
 	enc := jsoniter.NewEncoder(writer)
 	for result := range results {
@@ -62,6 +60,9 @@ func WriteURLsJSON(results <-chan string, writer io.Writer, blacklistMap map[str
 			}
 		}
 		jr.Url = result
-		enc.Encode(jr)
+		if err := enc.Encode(jr); err != nil {
+			// todo: handle this error
+			continue
+		}
 	}
 }
