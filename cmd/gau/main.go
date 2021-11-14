@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"github.com/lc/gau/pkg/output"
-	"github.com/lc/gau/runner"
-	"github.com/lc/gau/runner/flags"
+	"github.com/lc/gau/v2/pkg/output"
+	"github.com/lc/gau/v2/runner"
+	"github.com/lc/gau/v2/runner/flags"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -30,9 +30,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gau := &runner.Runner{}
+	gau/v2 := &runner.Runner{}
 
-	if err = gau.Init(config, pMap); err != nil {
+	if err = gau/v2.Init(config, pMap); err != nil {
 		log.Fatal(err)
 	}
 
@@ -69,7 +69,7 @@ func main() {
 
 
 	domains := make(chan string)
-	gau.Start(domains, results)
+	gau/v2.Start(domains, results)
 
 
 	if len(flags.Args()) > 0 {
@@ -90,7 +90,7 @@ func main() {
 	close(domains)
 
 	// wait for providers to fetch URLS
-	gau.Wait()
+	gau/v2.Wait()
 
 	// close results channel
 	close(results)

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/json-iterator/go"
-	"github.com/lc/gau/pkg/httpclient"
-	"github.com/lc/gau/pkg/providers"
+	"github.com/lc/gau/v2/pkg/httpclient"
+	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
 )
 
