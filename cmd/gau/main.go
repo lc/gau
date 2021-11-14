@@ -30,7 +30,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gau/v2 := &runner.Runner{}
+	gau := &runner.Runner{}
 
 	if err = gau/v2.Init(config, pMap); err != nil {
 		log.Fatal(err)
