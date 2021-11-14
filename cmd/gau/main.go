@@ -32,7 +32,7 @@ func main() {
 
 	gau := &runner.Runner{}
 
-	if err = gau/v2.Init(config, pMap); err != nil {
+	if err = gau.Init(config, pMap); err != nil {
 		log.Fatal(err)
 	}
 
@@ -69,7 +69,7 @@ func main() {
 
 
 	domains := make(chan string)
-	gau/v2.Start(domains, results)
+	gau.Start(domains, results)
 
 
 	if len(flags.Args()) > 0 {
@@ -90,7 +90,7 @@ func main() {
 	close(domains)
 
 	// wait for providers to fetch URLS
-	gau/v2.Wait()
+	gau.Wait()
 
 	// close results channel
 	close(results)

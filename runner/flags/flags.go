@@ -96,7 +96,7 @@ func New() *Options {
 	pflag.Uint("retries", 0, "retries for HTTP client")
 	pflag.String("proxy", "", "http proxy to use")
 	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
-	pflag.StringSlice("providers", []string{}, "list of providers to use (gau/v2,commoncrawl,otx,urlscan)")
+	pflag.StringSlice("providers", []string{}, "list of providers to use (wayback,commoncrawl,otx,urlscan)")
 	pflag.Bool("subs", false, "include subdomains of target domain")
 	pflag.Bool("verbose", false, "show verbose output")
 	pflag.Bool("json", false, "output as json")
@@ -108,7 +108,7 @@ func New() *Options {
 	pflag.StringSlice("ft", []string{}, "list of mime-types to filter")
 	pflag.String("from", "", "fetch urls from date (format: YYYYMM)")
 	pflag.String("to", "", "fetch urls to date (format: YYYYMM)")
-	pflag.Bool("version", false, "show gau/v2 version")
+	pflag.Bool("version", false, "show gau version")
 
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
@@ -130,7 +130,7 @@ func (o *Options) ReadInConfig() (*Config, error) {
 		return o.DefaultConfig(), err
 	}
 
-	confFile := filepath.Join(home, ".gau/v2.toml")
+	confFile := filepath.Join(home, ".gau.toml")
 	return o.ReadConfigFile(confFile)
 }
 
@@ -184,7 +184,7 @@ func (o *Options) getFlagValues(c *Config) {
 	subs := o.viper.GetBool("subs")
 
 	if version {
-		fmt.Printf("gau/v2 version: %s\n", providers.Version)
+		fmt.Printf("gau version: %s\n", providers.Version)
 		os.Exit(0)
 	}
 
