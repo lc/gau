@@ -14,10 +14,10 @@ Examples:
 
 ```bash
 $ printf example.com | gau
-$ cat domains.txt | gau -t 5
-$ gau example.com
-$ gau -o example-urls.txt example.com
-$ gau -b png,jpg,gif example.com
+$ cat domains.txt | gau --threads 5
+$ gau example.com google.com
+$ gau --o example-urls.txt example.com
+$ gau --blacklist png,jpg,gif example.com
 ```
 
 To display the help for the tool use the `-h` flag:
@@ -28,23 +28,33 @@ $ gau -h
 
 | Flag | Description | Example |
 |------|-------------|---------|
-| `-providers` | providers to fetch urls from (by default, all are used) | `gau -providers wayback,otx,commoncrawl example.com` |
-| `-b` | extensions to skip | `gau -b jpg,png,gif example.com` |
-| `-retries` | amount of retries for http client | `gau -retries 7 example.com` |
-| `-subs` | include subdomains of target domain | `gau -subs example.com` |
-| `-t` | number of threads to use | `gau -t 5` |
-| `-p` | http proxy to use | `gau -p http://localhost:8080 example.com` |
-| `-v` | enable verbose mode (show errors) | `gau -v` |
-| `-o` | filename to write results to | `gau -o urls.txt example.com` | 
-| `-json` | write output as json | `gau -json example.com` |
-| `-version` | show gau version | `gau -version` |
+|`--blacklist`| list of extensions to skip | gau --blacklist ttf,woff,svg,png|
+|`--fc`| list of status codes to filter | gau --fc 404,302 |
+|`--from`| fetch urls from date (format: YYYYMM) | gau --from 202101 |
+|`--ft`| list of mime-types to filter | gau --ft text/plain|
+|`--json`| output as json | gau --json |
+|`--mc`| list of status codes to match | gau --mc 200,500 |
+|`--mt`| list of mime-types to match |gau --mt text/html,application/json|
+|`--o`| filename to write results to | gau --o out.txt |
+|`--providers`| list of providers to use (gau,commoncrawl,otx,urlscan) | gau --providers wayback|
+|`--proxy`| http proxy to use (socks5:// or http:// | gau --proxy http://proxy.example.com:8080 |
+|`--retries`| retries for HTTP client | gau --retries 10 |
+|`--subs`| include subdomains of target domain | gau example.com --subs |
+|`--threads`| number of workers to spawn | gau example.com --threads |
+|`--to`| fetch urls to date (format: YYYYMM) | gau example.com --to 202101 |
+|`--verbose`| show verbose output | gau --verbose example.com |
+|`--version`| show gau version | gau --version|
 
 
+## Configuration Files
+gau automatically looks for a configuration file at `$HOME/.gau.toml` or`%USERPROFILE%\.gau.toml`. You can specify options and they will be used for every subsequent run of gau. Any options provided via command line flags will override options set in the configuration file.
+
+An example configuration file can be found [here](https://github.com/lc/gau/blob/master/.gau.toml)
 
 ## Installation:
 ### From source:
 ```
-$ GO111MODULE=on go get -u -v github.com/lc/gau
+$ GO111MODULE=on go get -u -v github.com/lc/gau/cmd/gau
 ```
 
 ### From binary:
@@ -62,7 +72,7 @@ docker run gau example.com
 Bear in mind that piping command (echo "example.com" | gau) will not work with the docker container
 
 ```bash
-$ tar xvf gau_1.1.0_linux_amd64.tar.gz
+$ tar xvf gau_2.0.0_linux_amd64.tar.gz
 $ mv gau /usr/bin/gau
 ```
 

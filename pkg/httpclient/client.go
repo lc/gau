@@ -1,30 +1,60 @@
-package providers
+package httpclient
 
 import (
+	"errors"
+	"fmt"
+	"github.com/valyala/fasthttp"
 	"math/rand"
-	"net/http"
 	"time"
 )
 
-const (
-	// Version of gau
-	Version = `1.2.0`
-)
+var ErrNilResponse = errors.New("empty response, check your proxy configuration")
+var ErrNon200Response = errors.New("API responded with non-200 status code")
 
-// A generic interface for providers
-type Provider interface {
-	Fetch(string, chan<- string) error
+type Header struct {
+	Key   string
+	Value string
 }
-type Config struct {
-	Threads           uint
-	Verbose           bool
-	MaxRetries        uint
-	IncludeSubdomains bool
-	Client            *http.Client
-	Providers         []string
-	Blacklist         map[string]struct{}
-	Output            string
-	JSON              bool
+
+func MakeRequest(c *fasthttp.Client, url string, maxRetries int, headers ...Header) ([]byte, error) {
+	var (
+		req  *fasthttp.Request
+		resp *fasthttp.Response
+	)
+	retries := maxRetries
+	for i := retries; i >= 0; i-- {
+		req = fasthttp.AcquireRequest()
+		defer fasthttp.ReleaseRequest(req)
+
+		req.Header.SetMethod(fasthttp.MethodGet)
+		for _, header := range headers {
+			req.Header.Set(header.Key, header.Value)
+		}
+		req.Header.Set(fasthttp.HeaderUserAgent, getUserAgent())
+		req.SetRequestURI(url)
+
+		resp = fasthttp.AcquireResponse()
+		defer fasthttp.ReleaseResponse(resp)
+
+		if err := c.DoTimeout(req, resp, time.Second*45); err != nil {
+			fasthttp.ReleaseRequest(req)
+			if retries == 0 {
+				break
+			}
+		}
+	}
+
+	if retries == 0 {
+		return nil, fmt.Errorf("httpclient: out of retries")
+	}
+	if resp.Body() == nil {
+		return nil, ErrNilResponse
+	}
+
+	if resp.StatusCode() != 200 {
+		return nil, ErrNon200Response
+	}
+	return resp.Body(), nil
 }
 
 func getUserAgent() string {
@@ -48,29 +78,4 @@ func getUserAgent() string {
 	pick := payload[randomIndex]
 
 	return pick
-}
-
-// MakeRequest tries to make a GET request for the given URL and retries on failure.
-func (c *Config) MakeRequest(url string) (resp *http.Response, err error) {
-	for retries := int(c.MaxRetries); ; retries-- {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("User-Agent", getUserAgent())
-
-		resp, err = c.Client.Do(req)
-		if err != nil {
-			if retries == 0 {
-				return nil, err
-			}
-
-			continue
-		}
-
-		break
-	}
-
-	return
 }
