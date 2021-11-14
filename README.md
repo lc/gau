@@ -54,7 +54,7 @@ An example configuration file can be found [here](https://github.com/lc/gau/blob
 ## Installation:
 ### From source:
 ```
-$ GO111MODULE=on go get -u -v github.com/lc/gau/cmd/gau
+$ go install github.com/lc/gau/v2
 ```
 
 ### From binary:
