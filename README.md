@@ -71,7 +71,7 @@ docker run gau example.com
 Bear in mind that piping command (echo "example.com" | gau) will not work with the docker container
 
 ```bash
-$ tar xvf gau_2.0.4_linux_amd64.tar.gz
+$ tar xvf gau_2.0.6_linux_amd64.tar.gz
 $ mv gau /usr/bin/gau
 ```
 
