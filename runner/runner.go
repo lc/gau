@@ -40,7 +40,7 @@ func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
 		case "commoncrawl":
 			cc, err := commoncrawl.New(c, filters)
 			if err != nil {
-				return fmt.Errorf("error instantiating client: %v\n", err)
+				return fmt.Errorf("error instantiating commoncrawl: %v\n", err)
 			}
 			r.providers = append(r.providers, cc)
 		}
@@ -51,7 +51,7 @@ func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
 
 // Starts starts the worker
 func (r *Runner) Start(domains chan string, results chan string) {
-	for i := uint(0); i < r.config.Threads; i++ { // TODO: get thread count dynamically
+	for i := uint(0); i < r.config.Threads; i++ {
 		r.wg.Add(1)
 		go func() {
 			defer r.wg.Done()
