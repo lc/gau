@@ -2,13 +2,12 @@ package httpclient
 
 import (
 	"errors"
-	"fmt"
 	"github.com/valyala/fasthttp"
 	"math/rand"
 	"time"
 )
 
-var ErrNilResponse = errors.New("empty response, check your proxy configuration")
+var ErrNilResponse = errors.New("unexpected nil response")
 var ErrNon200Response = errors.New("API responded with non-200 status code")
 
 type Header struct {
@@ -39,16 +38,19 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries int, headers ...Head
 		if err := c.DoTimeout(req, resp, time.Second*45); err != nil {
 			fasthttp.ReleaseRequest(req)
 			if retries == 0 {
-				break
+				return nil, err
 			}
 		}
-	}
 
-	if retries == 0 {
-		return nil, fmt.Errorf("httpclient: out of retries")
-	}
-	if resp.Body() == nil {
-		return nil, ErrNilResponse
+		if resp.Body() == nil {
+			if retries == 0 {
+				return nil, ErrNilResponse
+			}
+		}
+		// url responded with 503, so try again
+		if resp.StatusCode() == 503 {
+			continue
+		}
 	}
 
 	if resp.StatusCode() != 200 {
