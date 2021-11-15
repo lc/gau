@@ -67,19 +67,17 @@ func main() {
 		}()
 	}
 
-
 	domains := make(chan string)
 	gau.Start(domains, results)
 
-
 	if len(flags.Args()) > 0 {
 		for _, domain := range flags.Args() {
-			domains <-domain
+			domains <- domain
 		}
 	} else {
 		sc := bufio.NewScanner(os.Stdin)
 		for sc.Scan() {
-			domains <-sc.Text()
+			domains <- sc.Text()
 		}
 
 		if err := sc.Err(); err != nil {
