@@ -1,6 +1,6 @@
 threads = 2
 verbose = false
-retries = 5
+retries = 15
 subdomains = false
 providers = ["gau","commoncrawl","otx","urlscan"]
 blacklist = ["ttf","woff","svg","png","jpg"]

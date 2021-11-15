@@ -33,7 +33,7 @@ func main() {
 	gau := &runner.Runner{}
 
 	if err = gau.Init(config, pMap); err != nil {
-		log.Fatal(err)
+		log.Warn(err)
 	}
 
 	results := make(chan string)
