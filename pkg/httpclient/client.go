@@ -47,6 +47,10 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries int, headers ...Head
 				return nil, ErrNilResponse
 			}
 		}
+		// url responded with 503, so try again
+		if resp.StatusCode() == 503 {
+			continue
+		}
 	}
 
 	if resp.StatusCode() != 200 {
