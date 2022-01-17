@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/json-iterator/go"
+
+	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
@@ -39,6 +41,10 @@ func New(c *providers.Config, filters providers.Filters) (*Client, error) {
 		return nil, err
 	}
 
+	if len(r) == 0 {
+		err = errors.New("Failed to grab Commoncrawl results.")
+		return nil, err
+	}
 	client.apiURL = r[0].API
 	return client, nil
 }
