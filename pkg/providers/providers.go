@@ -5,7 +5,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const Version = `2.0.6`
+const Version = `2.0.7`
 
 // Provider is a generic interface for all archive fetchers
 type Provider interface {
