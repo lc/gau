@@ -42,9 +42,9 @@ func New(c *providers.Config, filters providers.Filters) (*Client, error) {
 	}
 
 	if len(r) == 0 {
-		err = errors.New("Failed to grab Commoncrawl results.")
-		return nil, err
+		return nil, errors.New("failed to grab latest commoncrawl index")
 	}
+
 	client.apiURL = r[0].API
 	return client, nil
 }
