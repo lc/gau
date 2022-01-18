@@ -59,8 +59,19 @@ $ go install github.com/lc/gau/v2/cmd/gau@latest
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
+```bash
+$ tar xvf gau_2.0.6_linux_amd64.tar.gz
+$ mv gau /usr/bin/gau
+```
+
 ### From Docker:
-You can build a docker image with the following command
+You can run gau via docker like so:
+```bash
+docker run --rm sxcurity/gau:latest --help
+```
+
+
+You can also build a docker image with the following command
 ```bash
 docker build -t gau .
 ```
@@ -70,10 +81,6 @@ docker run gau example.com
 ```
 Bear in mind that piping command (echo "example.com" | gau) will not work with the docker container
 
-```bash
-$ tar xvf gau_2.0.6_linux_amd64.tar.gz
-$ mv gau /usr/bin/gau
-```
 
 ## ohmyzsh note:
 ohmyzsh's [git plugin](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git) has an alias which maps `gau` to the `git add --update` command. This is problematic, causing a binary conflict between this tool "gau" and the zsh plugin alias "gau" (`git add --update`). There is currently a few workarounds which can be found in this Github [issue](https://github.com/lc/gau/issues/8). 
