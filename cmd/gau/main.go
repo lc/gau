@@ -8,6 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"net/http"
+	_ "net/http/pprof"
 	"sync"
 )
 
@@ -19,6 +21,9 @@ func main() {
 			log.Warnf("error reading config: %v", err)
 		}
 	}
+
+
+	log.Println(http.ListenAndServe("localhost:8989", nil))
 
 	pMap := make(runner.ProvidersMap)
 	for _, provider := range cfg.Providers {
@@ -56,12 +61,12 @@ func main() {
 	if config.JSON {
 		go func() {
 			defer writeWg.Done()
-			output.WriteURLsJSON(out, results, config.Blacklist)
+			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters)
 		}()
 	} else {
 		go func() {
 			defer writeWg.Done()
-			if err = output.WriteURLs(out, results, config.Blacklist); err != nil {
+			if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters); err != nil {
 				log.Fatalf("error writing results: %v\n", err)
 			}
 		}()

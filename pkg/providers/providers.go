@@ -23,6 +23,7 @@ type Config struct {
 	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
+	RemoveParameters  bool
 	Client            *fasthttp.Client
 	Providers         []string
 	Blacklist         map[string]struct{}

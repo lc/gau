@@ -13,7 +13,8 @@ type JSONResult struct {
 	Url string `json:"url"`
 }
 
-func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}) error {
+func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}, RemoveParameters bool) error {
+	lastURL := make(map[string]bool)
 	for result := range results {
 		buf := bytebufferpool.Get()
 		if len(blacklistMap) != 0 {
@@ -30,6 +31,19 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]
 				}
 			}
 		}
+		if RemoveParameters {
+			u, err := url.Parse(result)
+			if err != nil {
+				continue
+			}
+			if lastURL[u.Host+u.Path] {
+				continue
+			} else {
+				lastURL[u.Host+u.Path] = true ;
+			}
+
+		}
+
 		buf.B = append(buf.B, []byte(result)...)
 		buf.B = append(buf.B, "\n"...)
 		_, err := writer.Write(buf.B)
@@ -41,7 +55,7 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]
 	return nil
 }
 
-func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}) {
+func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}, RemoveParameters bool) {
 	var jr JSONResult
 	enc := jsoniter.NewEncoder(writer)
 	for result := range results {

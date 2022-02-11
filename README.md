@@ -31,6 +31,7 @@ $ gau -h
 |`--fc`| list of status codes to filter | gau --fc 404,302 |
 |`--from`| fetch urls from date (format: YYYYMM) | gau --from 202101 |
 |`--ft`| list of mime-types to filter | gau --ft text/plain|
+|`--fp`| remove different parameters of the same endpoint | gau --fp|
 |`--json`| output as json | gau --json |
 |`--mc`| list of status codes to match | gau --mc 200,500 |
 |`--mt`| list of mime-types to match |gau --mt text/html,application/json|

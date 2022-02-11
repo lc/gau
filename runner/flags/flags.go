@@ -29,6 +29,7 @@ type Config struct {
 	Verbose           bool              `mapstructure:"verbose"`
 	MaxRetries        uint              `mapstructure:"retries"`
 	IncludeSubdomains bool              `mapstructure:"subdomains"`
+	RemoveParameters  bool              `mapstructure:"parameters"`
 	Providers         []string          `mapstructure:"providers"`
 	Blacklist         []string          `mapstructure:"blacklist"`
 	JSON              bool              `mapstructure:"json"`
@@ -60,6 +61,7 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 		Verbose:           c.Verbose,
 		MaxRetries:        c.MaxRetries,
 		IncludeSubdomains: c.IncludeSubdomains,
+		RemoveParameters:  c.RemoveParameters,
 		Client: &fasthttp.Client{
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -98,6 +100,7 @@ func New() *Options {
 	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
 	pflag.StringSlice("providers", []string{}, "list of providers to use (wayback,commoncrawl,otx,urlscan)")
 	pflag.Bool("subs", false, "include subdomains of target domain")
+	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
 	pflag.Bool("verbose", false, "show verbose output")
 	pflag.Bool("json", false, "output as json")
 
@@ -160,6 +163,7 @@ func (o *Options) DefaultConfig() *Config {
 		Verbose:           false,
 		MaxRetries:        5,
 		IncludeSubdomains: false,
+		RemoveParameters:  false,
 		Providers:         []string{"wayback", "commoncrawl", "otx", "urlscan"},
 		Blacklist:         []string{},
 		JSON:              false,
@@ -182,6 +186,7 @@ func (o *Options) getFlagValues(c *Config) {
 	threads := o.viper.GetUint("threads")
 	blacklist := o.viper.GetStringSlice("blacklist")
 	subs := o.viper.GetBool("subs")
+	fp := o.viper.GetBool("fp")
 
 	if version {
 		fmt.Printf("gau version: %s\n", providers.Version)
@@ -216,6 +221,10 @@ func (o *Options) getFlagValues(c *Config) {
 
 	if subs {
 		c.IncludeSubdomains = subs
+	}
+
+	if fp {
+		c.RemoveParameters = fp
 	}
 
 	if json {
