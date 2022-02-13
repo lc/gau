@@ -8,8 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
-	"net/http"
-	_ "net/http/pprof"
 	"sync"
 )
 
@@ -21,9 +19,6 @@ func main() {
 			log.Warnf("error reading config: %v", err)
 		}
 	}
-
-
-	log.Println(http.ListenAndServe("localhost:8989", nil))
 
 	pMap := make(runner.ProvidersMap)
 	for _, provider := range cfg.Providers {
