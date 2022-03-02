@@ -14,7 +14,7 @@ type JSONResult struct {
 }
 
 func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}, RemoveParameters bool) error {
-	lastURL := make(map[string]bool)
+	lastURL := make(map[string]struct{})
 	for result := range results {
 		buf := bytebufferpool.Get()
 		if len(blacklistMap) != 0 {
@@ -36,10 +36,10 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]
 			if err != nil {
 				continue
 			}
-			if lastURL[u.Host+u.Path] {
+			if _, ok := lastURL[u.Host+u.Path]; ok {
 				continue
 			} else {
-				lastURL[u.Host+u.Path] = true ;
+				lastURL[u.Host+u.Path] = struct{}{} ;
 			}
 
 		}
