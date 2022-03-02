@@ -56,12 +56,12 @@ func main() {
 	if config.JSON {
 		go func() {
 			defer writeWg.Done()
-			output.WriteURLsJSON(out, results, config.Blacklist)
+			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters)
 		}()
 	} else {
 		go func() {
 			defer writeWg.Done()
-			if err = output.WriteURLs(out, results, config.Blacklist); err != nil {
+			if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters); err != nil {
 				log.Fatalf("error writing results: %v\n", err)
 			}
 		}()
