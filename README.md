@@ -36,7 +36,7 @@ $ gau -h
 |`--mc`| list of status codes to match | gau --mc 200,500 |
 |`--mt`| list of mime-types to match |gau --mt text/html,application/json|
 |`--o`| filename to write results to | gau --o out.txt |
-|`--providers`| list of providers to use (gau,commoncrawl,otx,urlscan) | gau --providers wayback|
+|`--providers`| list of providers to use (wayback,commoncrawl,otx,urlscan) | gau --providers wayback|
 |`--proxy`| http proxy to use (socks5:// or http:// | gau --proxy http://proxy.example.com:8080 |
 |`--retries`| retries for HTTP client | gau --retries 10 |
 |`--subs`| include subdomains of target domain | gau example.com --subs |
