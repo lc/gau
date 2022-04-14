@@ -51,7 +51,7 @@ paginate:
 				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			}
 			apiURL := c.formatURL(domain, searchAfter)
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, int(c.config.MaxRetries), header)
+			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout, header)
 			if err != nil {
 				return fmt.Errorf("failed to fetch urlscan: %s", err)
 			}

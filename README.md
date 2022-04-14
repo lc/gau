@@ -39,6 +39,7 @@ $ gau -h
 |`--providers`| list of providers to use (wayback,commoncrawl,otx,urlscan) | gau --providers wayback|
 |`--proxy`| http proxy to use (socks5:// or http:// | gau --proxy http://proxy.example.com:8080 |
 |`--retries`| retries for HTTP client | gau --retries 10 |
+|`--timeout`| timeout (in seconds) for HTTP client | gau --timeout 60 |
 |`--subs`| include subdomains of target domain | gau example.com --subs |
 |`--threads`| number of workers to spawn | gau example.com --threads |
 |`--to`| fetch urls to date (format: YYYYMM) | gau example.com --to 202101 |

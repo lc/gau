@@ -15,12 +15,12 @@ type Header struct {
 	Value string
 }
 
-func MakeRequest(c *fasthttp.Client, url string, maxRetries int, headers ...Header) ([]byte, error) {
+func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, headers ...Header) ([]byte, error) {
 	var (
 		req  *fasthttp.Request
 		resp *fasthttp.Response
 	)
-	retries := maxRetries
+	retries := int(maxRetries)
 	for i := retries; i >= 0; i-- {
 		req = fasthttp.AcquireRequest()
 		defer fasthttp.ReleaseRequest(req)
@@ -35,7 +35,7 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries int, headers ...Head
 		resp = fasthttp.AcquireResponse()
 		defer fasthttp.ReleaseResponse(resp)
 
-		if err := c.DoTimeout(req, resp, time.Second*45); err != nil {
+		if err := c.DoTimeout(req, resp, time.Second*time.Duration(timeout)); err != nil {
 			fasthttp.ReleaseRequest(req)
 			if retries == 0 {
 				return nil, err

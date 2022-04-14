@@ -31,7 +31,7 @@ type Client struct {
 func New(c *providers.Config, filters providers.Filters) (*Client, error) {
 	client := &Client{config: c, filters: filters}
 	// Fetch the list of available CommonCrawl Api URLs.
-	resp, err := httpclient.MakeRequest(c.Client, "http://index.commoncrawl.org/collinfo.json", int(c.MaxRetries))
+	resp, err := httpclient.MakeRequest(c.Client, "http://index.commoncrawl.org/collinfo.json", c.MaxRetries, c.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ paginate:
 				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			}
 			apiURL := c.formatURL(domain, page)
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, int(c.config.MaxRetries))
+			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {
 				return fmt.Errorf("failed to fetch commoncrawl(%d): %s", page, err)
 			}
@@ -114,7 +114,7 @@ func (c *Client) formatURL(domain string, page uint) string {
 func (c *Client) getPagination(domain string) (paginationResult, error) {
 	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(domain, 0))
 
-	resp, err := httpclient.MakeRequest(c.config.Client, url, int(c.config.MaxRetries))
+	resp, err := httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
 	if err != nil {
 		return paginationResult{}, err
 	}
