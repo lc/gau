@@ -53,7 +53,7 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 			}
 			apiURL := c.formatURL(domain, page)
 			// make HTTP request
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, int(c.config.MaxRetries))
+			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {
 				return fmt.Errorf("failed to fetch wayback results page %d: %s", page, err)
 			}
@@ -96,7 +96,8 @@ func (c *Client) formatURL(domain string, page uint) string {
 // getPagination returns the number of pages for Wayback
 func (c *Client) getPagination(domain string) (uint, error) {
 	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(domain, 0))
-	resp, err := httpclient.MakeRequest(c.config.Client, url, int(c.config.MaxRetries))
+	resp, err := httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
+
 	if err != nil {
 		return 0, err
 	}

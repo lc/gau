@@ -26,6 +26,7 @@ type Config struct {
 	Filters           providers.Filters `mapstructure:"filters"`
 	Proxy             string            `mapstructure:"proxy"`
 	Threads           uint              `mapstructure:"threads"`
+	Timeout           uint              `mapstructure:"timeout"`
 	Verbose           bool              `mapstructure:"verbose"`
 	MaxRetries        uint              `mapstructure:"retries"`
 	IncludeSubdomains bool              `mapstructure:"subdomains"`
@@ -58,6 +59,7 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 
 	pc := &providers.Config{
 		Threads:           c.Threads,
+		Timeout:           c.Timeout,
 		Verbose:           c.Verbose,
 		MaxRetries:        c.MaxRetries,
 		IncludeSubdomains: c.IncludeSubdomains,
@@ -94,7 +96,8 @@ func New() *Options {
 	v := viper.New()
 
 	pflag.String("o", "", "filename to write results to")
-	pflag.Uint("threads", 1, "number of workers to spawn, default: 1")
+	pflag.Uint("threads", 1, "number of workers to spawn")
+	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
 	pflag.Uint("retries", 0, "retries for HTTP client")
 	pflag.String("proxy", "", "http proxy to use")
 	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
