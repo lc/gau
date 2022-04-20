@@ -51,8 +51,10 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		if resp.StatusCode() == 503 {
 			continue
 		}
-	}
 
+		goto done
+	}
+done:
 	if resp.StatusCode() != 200 {
 		return nil, ErrNon200Response
 	}
