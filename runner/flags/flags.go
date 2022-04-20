@@ -162,6 +162,7 @@ func (o *Options) DefaultConfig() *Config {
 	c := &Config{
 		Filters:           providers.Filters{},
 		Proxy:             "",
+		Timeout:           45,
 		Threads:           1,
 		Verbose:           false,
 		MaxRetries:        5,
