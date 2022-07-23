@@ -8,6 +8,7 @@ import (
 	"github.com/lc/gau/v2/pkg/httpclient"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 const (
@@ -55,7 +56,6 @@ paginate:
 			if err != nil {
 				return fmt.Errorf("failed to fetch urlscan: %s", err)
 			}
-
 			var result apiResponse
 			decoder := jsoniter.NewDecoder(bytes.NewReader(resp))
 			decoder.UseNumber()
@@ -72,7 +72,7 @@ paginate:
 
 			total := len(result.Results)
 			for i, res := range result.Results {
-				if res.Page.Domain == domain {
+				if res.Page.Domain == domain || (c.config.IncludeSubdomains && strings.HasSuffix(res.Page.Domain, domain)) {
 					results <- res.Page.URL
 				}
 
