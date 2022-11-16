@@ -65,6 +65,11 @@ func (r *Runner) Wait() {
 	r.wg.Wait()
 }
 
+// Cancel fetching from providers
+func (r *Runner) Cancel() {
+	r.cancelFunc()
+}
+
 // worker checks to see if the context is finished and executes the fetching process for each provider
 func (r *Runner) worker(ctx context.Context, domains chan string, results chan string) {
 work:
