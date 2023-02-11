@@ -25,26 +25,27 @@ To display the help for the tool use the `-h` flag:
 $ gau -h
 ```
 
-| Flag | Description | Example |
-|------|-------------|---------|
-|`--blacklist`| list of extensions to skip | gau --blacklist ttf,woff,svg,png|
-|`--fc`| list of status codes to filter | gau --fc 404,302 |
-|`--from`| fetch urls from date (format: YYYYMM) | gau --from 202101 |
-|`--ft`| list of mime-types to filter | gau --ft text/plain|
-|`--fp`| remove different parameters of the same endpoint | gau --fp|
-|`--json`| output as json | gau --json |
-|`--mc`| list of status codes to match | gau --mc 200,500 |
-|`--mt`| list of mime-types to match |gau --mt text/html,application/json|
-|`--o`| filename to write results to | gau --o out.txt |
-|`--providers`| list of providers to use (wayback,commoncrawl,otx,urlscan) | gau --providers wayback|
-|`--proxy`| http proxy to use (socks5:// or http:// | gau --proxy http://proxy.example.com:8080 |
-|`--retries`| retries for HTTP client | gau --retries 10 |
-|`--timeout`| timeout (in seconds) for HTTP client | gau --timeout 60 |
-|`--subs`| include subdomains of target domain | gau example.com --subs |
-|`--threads`| number of workers to spawn | gau example.com --threads |
-|`--to`| fetch urls to date (format: YYYYMM) | gau example.com --to 202101 |
-|`--verbose`| show verbose output | gau --verbose example.com |
-|`--version`| show gau version | gau --version|
+| Flag          | Description                                                | Example                                   |
+|---------------|------------------------------------------------------------|-------------------------------------------|
+| `--blacklist` | list of extensions to skip                                 | gau --blacklist ttf,woff,svg,png          |
+| `--config`    | location of config file                                    | gau --config gau.toml                 |
+| `--fc`        | list of status codes to filter                             | gau --fc 404,302                          |
+| `--from`      | fetch urls from date (format: YYYYMM)                      | gau --from 202101                         |
+| `--ft`        | list of mime-types to filter                               | gau --ft text/plain                       |
+| `--fp`        | remove different parameters of the same endpoint           | gau --fp                                  |
+| `--json`      | output as json                                             | gau --json                                |
+| `--mc`        | list of status codes to match                              | gau --mc 200,500                          |
+| `--mt`        | list of mime-types to match                                | gau --mt text/html,application/json       |
+| `--o`         | filename to write results to                               | gau --o out.txt                           |
+| `--providers` | list of providers to use (wayback,commoncrawl,otx,urlscan) | gau --providers wayback                   |
+| `--proxy`     | http proxy to use (socks5:// or http://                    | gau --proxy http://proxy.example.com:8080 |
+| `--retries`   | retries for HTTP client                                    | gau --retries 10                          |
+| `--timeout`   | timeout (in seconds) for HTTP client                       | gau --timeout 60                          |
+| `--subs`      | include subdomains of target domain                        | gau example.com --subs                    |
+| `--threads`   | number of workers to spawn                                 | gau example.com --threads                 |
+| `--to`        | fetch urls to date (format: YYYYMM)                        | gau example.com --to 202101               |
+| `--verbose`   | show verbose output                                        | gau --verbose example.com                 |
+| `--version`   | show gau version                                           | gau --version                             |
 
 
 ## Configuration Files
