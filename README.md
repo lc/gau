@@ -57,7 +57,14 @@ An example configuration file can be found [here](https://github.com/lc/gau/blob
 ```
 $ go install github.com/lc/gau/v2/cmd/gau@latest
 ```
-
+### From github :
+```
+git clone https://github.com/lc/gau.git; \
+cd gau/cmd; \
+go build; \
+sudo mv gau /usr/local/bin/; \
+gau --version;
+```
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
