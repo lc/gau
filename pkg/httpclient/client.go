@@ -27,7 +27,7 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 
 		req.Header.SetMethod(fasthttp.MethodGet)
 		for _, header := range headers {
-			if header.Key != "" {
+			if header.Key != "" && header.Value != "" {
 				req.Header.Set(header.Key, header.Value)
 			}
 		}

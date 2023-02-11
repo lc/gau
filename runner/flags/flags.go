@@ -106,7 +106,7 @@ func New() *Options {
 	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
 	pflag.Bool("verbose", false, "show verbose output")
 	pflag.Bool("json", false, "output as json")
-
+	pflag.String("config", "", "config file to use")
 	// filter flags
 	pflag.StringSlice("mc", []string{}, "list of status codes to match")
 	pflag.StringSlice("fc", []string{}, "list of status codes to filter")
@@ -131,6 +131,11 @@ func Args() []string {
 }
 
 func (o *Options) ReadInConfig() (*Config, error) {
+	confLocation := o.viper.GetString("config")
+	if confLocation != "" {
+		return o.ReadConfigFile(confLocation)
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return o.DefaultConfig(), err
