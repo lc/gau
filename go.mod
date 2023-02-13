@@ -1,4 +1,4 @@
-module github.com/vortexTCP/gau/v3
+module github.com/vortexTCP/gau/v4
 
 go 1.17
 
@@ -31,11 +31,4 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/ini.v1 v1.64.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-)
-
-retract (
-	v2.0.7
-	v2.0.3
-	v2.0.2
-	v2.0.1
 )
