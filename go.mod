@@ -1,4 +1,4 @@
-module github.com/vortexTCP/gau/v2
+module github.com/vortexTCP/gau/v3
 
 go 1.17
 
