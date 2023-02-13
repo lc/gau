@@ -95,34 +95,6 @@ type Options struct {
 func New() *Options {
 	v := viper.New()
 
-	pflag.String("o", "", "filename to write results to")
-	pflag.Uint("threads", 1, "number of workers to spawn")
-	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
-	pflag.Uint("retries", 0, "retries for HTTP client")
-	pflag.String("proxy", "", "http proxy to use")
-	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
-	pflag.StringSlice("providers", []string{}, "list of providers to use (wayback,commoncrawl,otx,urlscan)")
-	pflag.Bool("subs", false, "include subdomains of target domain")
-	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
-	pflag.Bool("verbose", false, "show verbose output")
-	pflag.Bool("json", false, "output as json")
-
-	// filter flags
-	pflag.StringSlice("mc", []string{}, "list of status codes to match")
-	pflag.StringSlice("fc", []string{}, "list of status codes to filter")
-	pflag.StringSlice("mt", []string{}, "list of mime-types to match")
-	pflag.StringSlice("ft", []string{}, "list of mime-types to filter")
-	pflag.String("from", "", "fetch urls from date (format: YYYYMM)")
-	pflag.String("to", "", "fetch urls to date (format: YYYYMM)")
-	pflag.Bool("version", false, "show gau version")
-
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
-
-	if err := v.BindPFlags(pflag.CommandLine); err != nil {
-		log.Fatal(err)
-	}
-
 	return &Options{viper: v}
 }
 
@@ -153,8 +125,6 @@ func (o *Options) ReadConfigFile(name string) (*Config, error) {
 		return o.DefaultConfig(), err
 	}
 
-	o.getFlagValues(&c)
-
 	return &c, nil
 }
 
@@ -174,117 +144,6 @@ func (o *Options) DefaultConfig() *Config {
 		Outfile:           "",
 	}
 
-	o.getFlagValues(c)
-
 	return c
 }
 
-func (o *Options) getFlagValues(c *Config) {
-	version := o.viper.GetBool("version")
-	verbose := o.viper.GetBool("verbose")
-	json := o.viper.GetBool("json")
-	retries := o.viper.GetUint("retries")
-	proxy := o.viper.GetString("proxy")
-	outfile := o.viper.GetString("o")
-	fetchers := o.viper.GetStringSlice("providers")
-	threads := o.viper.GetUint("threads")
-	blacklist := o.viper.GetStringSlice("blacklist")
-	subs := o.viper.GetBool("subs")
-	fp := o.viper.GetBool("fp")
-
-	if version {
-		fmt.Printf("gau version: %s\n", providers.Version)
-		os.Exit(0)
-	}
-
-	if proxy != "" {
-		c.Proxy = proxy
-	}
-
-	if outfile != "" {
-		c.Outfile = outfile
-	}
-	// set if --threads flag is set, otherwise use default
-	if threads > 1 {
-		c.Threads = threads
-	}
-
-	// set if --blacklist flag is specified, otherwise use default
-	if len(blacklist) > 0 {
-		c.Blacklist = blacklist
-	}
-
-	// set if --providers flag is specified, otherwise use default
-	if len(fetchers) > 0 {
-		c.Providers = fetchers
-	}
-
-	if retries > 0 {
-		c.MaxRetries = retries
-	}
-
-	if subs {
-		c.IncludeSubdomains = subs
-	}
-
-	if fp {
-		c.RemoveParameters = fp
-	}
-
-	if json {
-		c.JSON = true
-	}
-
-	if verbose {
-		c.Verbose = verbose
-	}
-
-	// get filter flags
-	mc := o.viper.GetStringSlice("mc")
-	fc := o.viper.GetStringSlice("fc")
-	mt := o.viper.GetStringSlice("mt")
-	ft := o.viper.GetStringSlice("ft")
-	from := o.viper.GetString("from")
-	to := o.viper.GetString("to")
-
-	var seenFilterFlag bool
-
-	var filters providers.Filters
-	if len(mc) > 0 {
-		seenFilterFlag = true
-		filters.MatchStatusCodes = mc
-	}
-
-	if len(fc) > 0 {
-		seenFilterFlag = true
-		filters.FilterStatusCodes = fc
-	}
-
-	if len(mt) > 0 {
-		seenFilterFlag = true
-		filters.MatchMimeTypes = mt
-	}
-
-	if len(ft) > 0 {
-		seenFilterFlag = true
-		filters.FilterMimeTypes = ft
-	}
-
-	if from != "" {
-		seenFilterFlag = true
-		if _, err := time.Parse("200601", from); err == nil {
-			filters.From = from
-		}
-	}
-
-	if to != "" {
-		seenFilterFlag = true
-		if _, err := time.Parse("200601", to); err == nil {
-			filters.To = to
-		}
-	}
-
-	if seenFilterFlag {
-		c.Filters = filters
-	}
-}
