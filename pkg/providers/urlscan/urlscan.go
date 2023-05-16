@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
+	"github.com/lc/gau/v2/pkg/output"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
@@ -32,7 +34,7 @@ func New(c *providers.Config) *Client {
 func (c *Client) Name() string {
 	return Name
 }
-func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
+func (c *Client) Fetch(ctx context.Context, domain string, results chan output.Result) error {
 	var searchAfter string
 	var header httpclient.Header
 
@@ -73,7 +75,10 @@ paginate:
 			total := len(result.Results)
 			for i, res := range result.Results {
 				if res.Page.Domain == domain || (c.config.IncludeSubdomains && strings.HasSuffix(res.Page.Domain, domain)) {
-					results <- res.Page.URL
+					results <- output.Result{
+						URL:      res.Page.URL,
+						Provider: Name,
+					}
 				}
 
 				if i == total-1 {

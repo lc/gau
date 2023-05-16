@@ -4,17 +4,22 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/lc/gau/v2/pkg/providers"
-	"github.com/lynxsecurity/pflag"
-	"github.com/lynxsecurity/viper"
-	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttpproxy"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/lc/gau/v2/pkg/providers"
+	"github.com/lc/gau/v2/pkg/providers/commoncrawl"
+	"github.com/lc/gau/v2/pkg/providers/otx"
+	"github.com/lc/gau/v2/pkg/providers/urlscan"
+	"github.com/lc/gau/v2/pkg/providers/wayback"
+	"github.com/lynxsecurity/pflag"
+	"github.com/lynxsecurity/viper"
+	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpproxy"
 )
 
 type URLScanConfig struct {
@@ -101,7 +106,14 @@ func New() *Options {
 	pflag.Uint("retries", 0, "retries for HTTP client")
 	pflag.String("proxy", "", "http proxy to use")
 	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
-	pflag.StringSlice("providers", []string{}, "list of providers to use (wayback,commoncrawl,otx,urlscan)")
+	pflag.StringSlice(
+		"providers",
+		[]string{},
+		fmt.Sprintf(
+			"list of providers to use (%s,%s,%s,%s)",
+			wayback.Name, commoncrawl.Name, otx.Name, urlscan.Name,
+		),
+	)
 	pflag.Bool("subs", false, "include subdomains of target domain")
 	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
 	pflag.Bool("verbose", false, "show verbose output")
@@ -168,10 +180,15 @@ func (o *Options) DefaultConfig() *Config {
 		MaxRetries:        5,
 		IncludeSubdomains: false,
 		RemoveParameters:  false,
-		Providers:         []string{"wayback", "commoncrawl", "otx", "urlscan"},
-		Blacklist:         []string{},
-		JSON:              false,
-		Outfile:           "",
+		Providers: []string{
+			commoncrawl.Name,
+			otx.Name,
+			urlscan.Name,
+			wayback.Name,
+		},
+		Blacklist: []string{},
+		JSON:      false,
+		Outfile:   "",
 	}
 
 	o.getFlagValues(c)
