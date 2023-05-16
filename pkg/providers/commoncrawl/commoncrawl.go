@@ -9,6 +9,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
+	"github.com/lc/gau/v2/pkg/output"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
 )
@@ -55,7 +56,7 @@ func (c *Client) Name() string {
 
 // Fetch fetches all urls for a given domain and sends them to a channel.
 // It returns an error should one occur.
-func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
+func (c *Client) Fetch(ctx context.Context, domain string, results chan output.Result) error {
 	p, err := c.getPagination(domain)
 	if err != nil {
 		return err
@@ -93,7 +94,10 @@ paginate:
 					return fmt.Errorf("received an error from commoncrawl: %s", res.Error)
 				}
 
-				results <- res.URL
+				results <- output.Result{
+					URL:      res.URL,
+					Provider: Name,
+				}
 			}
 		}
 	}

@@ -1,24 +1,27 @@
 package output
 
 import (
-	jsoniter "github.com/json-iterator/go"
-	"github.com/valyala/bytebufferpool"
 	"io"
 	"net/url"
 	"path"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
+	"github.com/valyala/bytebufferpool"
 )
 
-type JSONResult struct {
-	Url string `json:"url"`
+// Result of lookup from providers.
+type Result struct {
+	URL      string `json:"url,omitempty"`
+	Provider string `json:"provider,omitempty"`
 }
 
-func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}, RemoveParameters bool) error {
+func WriteURLs(writer io.Writer, results <-chan Result, blacklistMap map[string]struct{}, RemoveParameters bool) error {
 	lastURL := make(map[string]struct{})
 	for result := range results {
 		buf := bytebufferpool.Get()
 		if len(blacklistMap) != 0 {
-			u, err := url.Parse(result)
+			u, err := url.Parse(result.URL)
 			if err != nil {
 				continue
 			}
@@ -32,19 +35,19 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]
 			}
 		}
 		if RemoveParameters {
-			u, err := url.Parse(result)
+			u, err := url.Parse(result.URL)
 			if err != nil {
 				continue
 			}
 			if _, ok := lastURL[u.Host+u.Path]; ok {
 				continue
 			} else {
-				lastURL[u.Host+u.Path] = struct{}{} ;
+				lastURL[u.Host+u.Path] = struct{}{}
 			}
 
 		}
 
-		buf.B = append(buf.B, []byte(result)...)
+		buf.B = append(buf.B, []byte(result.URL)...)
 		buf.B = append(buf.B, "\n"...)
 		_, err := writer.Write(buf.B)
 		if err != nil {
@@ -55,12 +58,11 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap map[string]
 	return nil
 }
 
-func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap map[string]struct{}, RemoveParameters bool) {
-	var jr JSONResult
+func WriteURLsJSON(writer io.Writer, results <-chan Result, blacklistMap map[string]struct{}, RemoveParameters bool) {
 	enc := jsoniter.NewEncoder(writer)
 	for result := range results {
 		if len(blacklistMap) != 0 {
-			u, err := url.Parse(result)
+			u, err := url.Parse(result.URL)
 			if err != nil {
 				continue
 			}
@@ -73,8 +75,7 @@ func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap map[str
 				}
 			}
 		}
-		jr.Url = result
-		if err := enc.Encode(jr); err != nil {
+		if err := enc.Encode(result); err != nil {
 			// todo: handle this error
 			continue
 		}

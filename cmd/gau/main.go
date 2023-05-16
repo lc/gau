@@ -2,13 +2,14 @@ package main
 
 import (
 	"bufio"
+	"io"
+	"os"
+	"sync"
+
 	"github.com/lc/gau/v2/pkg/output"
 	"github.com/lc/gau/v2/runner"
 	"github.com/lc/gau/v2/runner/flags"
 	log "github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"sync"
 )
 
 func main() {
@@ -36,7 +37,7 @@ func main() {
 		log.Warn(err)
 	}
 
-	results := make(chan string)
+	results := make(chan output.Result)
 
 	var out io.Writer
 	// Handle results in background

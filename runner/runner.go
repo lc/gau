@@ -3,13 +3,15 @@ package runner
 import (
 	"context"
 	"fmt"
+	"sync"
+
+	"github.com/lc/gau/v2/pkg/output"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/lc/gau/v2/pkg/providers/commoncrawl"
 	"github.com/lc/gau/v2/pkg/providers/otx"
 	"github.com/lc/gau/v2/pkg/providers/urlscan"
 	"github.com/lc/gau/v2/pkg/providers/wayback"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 type Runner struct {
@@ -30,14 +32,14 @@ func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
 
 	for name, filters := range providerMap {
 		switch name {
-		case "urlscan":
+		case urlscan.Name:
 			r.providers = append(r.providers, urlscan.New(c))
-		case "otx":
+		case otx.Name:
 			o := otx.New(c)
 			r.providers = append(r.providers, o)
-		case "wayback":
+		case wayback.Name:
 			r.providers = append(r.providers, wayback.New(c, filters))
-		case "commoncrawl":
+		case commoncrawl.Name:
 			cc, err := commoncrawl.New(c, filters)
 			if err != nil {
 				return fmt.Errorf("error instantiating commoncrawl: %v\n", err)
@@ -50,7 +52,7 @@ func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
 }
 
 // Starts starts the worker
-func (r *Runner) Start(domains chan string, results chan string) {
+func (r *Runner) Start(domains chan string, results chan output.Result) {
 	for i := uint(0); i < r.config.Threads; i++ {
 		r.wg.Add(1)
 		go func() {
@@ -66,7 +68,7 @@ func (r *Runner) Wait() {
 }
 
 // worker checks to see if the context is finished and executes the fetching process for each provider
-func (r *Runner) worker(ctx context.Context, domains chan string, results chan string) {
+func (r *Runner) worker(ctx context.Context, domains chan string, results chan output.Result) {
 work:
 	for {
 		select {
