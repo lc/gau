@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/lynxsecurity/pflag"
 	"github.com/lynxsecurity/viper"
@@ -80,11 +81,8 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 		OTX: c.OTX,
 	}
 
-	pc.Blacklist = make(map[string]struct{})
-	for _, b := range c.Blacklist {
-		pc.Blacklist[b] = struct{}{}
-	}
-
+	pc.Blacklist = mapset.NewThreadUnsafeSet(c.Blacklist...)
+	pc.Blacklist.Add("")
 	return pc, nil
 }
 
