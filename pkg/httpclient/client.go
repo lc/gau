@@ -36,10 +36,9 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		req.SetRequestURI(url)
 		respBody, err = doReq(c, req, timeout)
 		if err == nil {
-			goto done
+			break
 		}
 	}
-done:
 	if err != nil {
 		return nil, err
 	}
