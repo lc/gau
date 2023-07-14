@@ -47,7 +47,7 @@ func (c *Client) Name() string {
 
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
 paginate:
-	for page := 1; ; page++ {
+	for page := uint(1); ; page++ {
 		select {
 		case <-ctx.Done():
 			break paginate
@@ -75,7 +75,7 @@ paginate:
 	return nil
 }
 
-func (c *Client) formatURL(domain string, page int) string {
+func (c *Client) formatURL(domain string, page uint) string {
 	category := "hostname"
 	if !domainutil.HasSubdomain(domain) {
 		category = "domain"

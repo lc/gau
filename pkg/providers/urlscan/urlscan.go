@@ -42,7 +42,7 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 	}
 
 paginate:
-	for page := 0; ; page++ {
+	for page := uint(0); ; page++ {
 		select {
 		case <-ctx.Done():
 			break paginate
