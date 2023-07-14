@@ -29,7 +29,6 @@ type Client struct {
 }
 
 func New(c *providers.Config, filters providers.Filters) (*Client, error) {
-	client := &Client{config: c, filters: filters}
 	// Fetch the list of available CommonCrawl Api URLs.
 	resp, err := httpclient.MakeRequest(c.Client, "http://index.commoncrawl.org/collinfo.json", c.MaxRetries, c.Timeout)
 	if err != nil {
@@ -45,8 +44,7 @@ func New(c *providers.Config, filters providers.Filters) (*Client, error) {
 		return nil, errors.New("failed to grab latest commoncrawl index")
 	}
 
-	client.apiURL = r[0].API
-	return client, nil
+	return &Client{config: c, filters: filters, apiURL: r[0].API}, nil
 }
 
 func (c *Client) Name() string {
@@ -111,18 +109,15 @@ func (c *Client) formatURL(domain string, page uint) string {
 }
 
 // Fetch the number of pages.
-func (c *Client) getPagination(domain string) (paginationResult, error) {
+func (c *Client) getPagination(domain string) (r paginationResult, err error) {
 	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(domain, 0))
+	var resp []byte
 
-	resp, err := httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
+	resp, err = httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
 	if err != nil {
-		return paginationResult{}, err
+		return
 	}
 
-	var r paginationResult
-	if err = jsoniter.Unmarshal(resp, &r); err != nil {
-		return r, err
-	}
-
-	return r, nil
+	err = jsoniter.Unmarshal(resp, &r)
+	return
 }
