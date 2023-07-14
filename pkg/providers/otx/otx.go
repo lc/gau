@@ -78,19 +78,17 @@ paginate:
 }
 
 func (c *Client) formatURL(domain string, page int) string {
+	category := "hostname"
 	if !domainutil.HasSubdomain(domain) {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/domain/%s/url_list?limit=100&page=%d",
-			domain, page,
-		)
-	} else if domainutil.HasSubdomain(domain) && c.config.IncludeSubdomains {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/domain/%s/url_list?limit=100&page=%d",
-			domainutil.Domain(domain), page,
-		)
-	} else {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/hostname/%s/url_list?limit=100&page=%d",
-			domain, page,
-		)
+		category = "domain"
 	}
+	if domainutil.HasSubdomain(domain) && c.config.IncludeSubdomains {
+		domain = domainutil.Domain(domain)
+		category = "domain"
+	}
+
+	return fmt.Sprintf("%sapi/v1/indicators/%s/%s/url_list?limit=100&page=%d", _BaseURL, category, domain, page)
+
 }
 
 var _BaseURL = "https://otx.alienvault.com/"
