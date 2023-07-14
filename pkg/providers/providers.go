@@ -22,7 +22,6 @@ type URLScan struct {
 type Config struct {
 	Threads           uint
 	Timeout           uint
-	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
 	RemoveParameters  bool

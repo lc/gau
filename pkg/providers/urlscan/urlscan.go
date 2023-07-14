@@ -47,9 +47,7 @@ paginate:
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, searchAfter)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout, header)
 			if err != nil {
@@ -63,9 +61,7 @@ paginate:
 			}
 			// rate limited
 			if result.Status == 429 {
-				if c.config.Verbose {
-					logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429, probably being rate limited")
-				}
+				logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429, probably being rate limited")
 				break paginate
 			}
 

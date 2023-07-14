@@ -52,9 +52,7 @@ paginate:
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {

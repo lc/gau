@@ -60,9 +60,7 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 	}
 	// 0 pages means no results
 	if p.Pages == 0 {
-		if c.config.Verbose {
-			logrus.WithFields(logrus.Fields{"provider": Name}).Infof("no results for %s", domain)
-		}
+		logrus.WithFields(logrus.Fields{"provider": Name}).Infof("no results for %s", domain)
 		return nil
 	}
 
@@ -72,9 +70,7 @@ paginate:
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {

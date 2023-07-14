@@ -43,14 +43,13 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 	if err != nil {
 		return fmt.Errorf("failed to fetch wayback pagination: %s", err)
 	}
+
 	for page := uint(0); page < pages; page++ {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			// make HTTP request
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
