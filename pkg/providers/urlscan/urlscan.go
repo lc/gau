@@ -41,16 +41,13 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 		header.Value = c.config.URLScan.APIKey
 	}
 
-	page := 0
 paginate:
-	for {
+	for page := uint(0); ; page++ {
 		select {
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, searchAfter)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout, header)
 			if err != nil {
@@ -64,9 +61,7 @@ paginate:
 			}
 			// rate limited
 			if result.Status == 429 {
-				if c.config.Verbose {
-					logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429")
-				}
+				logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429, probably being rate limited")
 				break paginate
 			}
 
@@ -89,7 +84,6 @@ paginate:
 			if !result.HasMore {
 				break paginate
 			}
-			page++
 		}
 	}
 	return nil
@@ -97,10 +91,10 @@ paginate:
 
 func (c *Client) formatURL(domain string, after string) string {
 	if after != "" {
-		return fmt.Sprintf(_BaseURL+"api/v1/search/?q=domain:%s&size=100", domain) + "&search_after=" + after
+		after = "&search_after=" + after
 	}
 
-	return fmt.Sprintf(_BaseURL+"api/v1/search/?q=domain:%s&size=100", domain)
+	return fmt.Sprintf(_BaseURL+"api/v1/search/?q=domain:%s&size=100", domain) + after
 }
 
 func setBaseURL(baseURL string) {

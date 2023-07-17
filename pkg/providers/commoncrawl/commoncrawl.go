@@ -29,7 +29,6 @@ type Client struct {
 }
 
 func New(c *providers.Config, filters providers.Filters) (*Client, error) {
-	client := &Client{config: c, filters: filters}
 	// Fetch the list of available CommonCrawl Api URLs.
 	resp, err := httpclient.MakeRequest(c.Client, "http://index.commoncrawl.org/collinfo.json", c.MaxRetries, c.Timeout)
 	if err != nil {
@@ -45,8 +44,7 @@ func New(c *providers.Config, filters providers.Filters) (*Client, error) {
 		return nil, errors.New("failed to grab latest commoncrawl index")
 	}
 
-	client.apiURL = r[0].API
-	return client, nil
+	return &Client{config: c, filters: filters, apiURL: r[0].API}, nil
 }
 
 func (c *Client) Name() string {
@@ -62,9 +60,7 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 	}
 	// 0 pages means no results
 	if p.Pages == 0 {
-		if c.config.Verbose {
-			logrus.WithFields(logrus.Fields{"provider": Name}).Infof("no results for %s", domain)
-		}
+		logrus.WithFields(logrus.Fields{"provider": Name}).Infof("no results for %s", domain)
 		return nil
 	}
 
@@ -74,9 +70,7 @@ paginate:
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {
@@ -111,18 +105,15 @@ func (c *Client) formatURL(domain string, page uint) string {
 }
 
 // Fetch the number of pages.
-func (c *Client) getPagination(domain string) (paginationResult, error) {
+func (c *Client) getPagination(domain string) (r paginationResult, err error) {
 	url := fmt.Sprintf("%s&showNumPages=true", c.formatURL(domain, 0))
+	var resp []byte
 
-	resp, err := httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
+	resp, err = httpclient.MakeRequest(c.config.Client, url, c.config.MaxRetries, c.config.Timeout)
 	if err != nil {
-		return paginationResult{}, err
+		return
 	}
 
-	var r paginationResult
-	if err = jsoniter.Unmarshal(resp, &r); err != nil {
-		return r, err
-	}
-
-	return r, nil
+	err = jsoniter.Unmarshal(resp, &r)
+	return
 }

@@ -4,17 +4,20 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/lc/gau/v2/pkg/providers"
-	"github.com/lynxsecurity/pflag"
-	"github.com/lynxsecurity/viper"
-	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttpproxy"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/lc/gau/v2/pkg/providers"
+	"github.com/lynxsecurity/pflag"
+	"github.com/lynxsecurity/viper"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpproxy"
 )
 
 type URLScanConfig struct {
@@ -60,7 +63,6 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 	pc := &providers.Config{
 		Threads:           c.Threads,
 		Timeout:           c.Timeout,
-		Verbose:           c.Verbose,
 		MaxRetries:        c.MaxRetries,
 		IncludeSubdomains: c.IncludeSubdomains,
 		RemoveParameters:  c.RemoveParameters,
@@ -80,11 +82,12 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 		OTX: c.OTX,
 	}
 
-	pc.Blacklist = make(map[string]struct{})
-	for _, b := range c.Blacklist {
-		pc.Blacklist[b] = struct{}{}
+	logrus.SetLevel(log.ErrorLevel)
+	if c.Verbose {
+		logrus.SetLevel(log.InfoLevel)
 	}
-
+	pc.Blacklist = mapset.NewThreadUnsafeSet(c.Blacklist...)
+	pc.Blacklist.Add("")
 	return pc, nil
 }
 

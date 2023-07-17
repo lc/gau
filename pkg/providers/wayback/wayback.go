@@ -22,11 +22,8 @@ type Client struct {
 	config  *providers.Config
 }
 
-func New(c *providers.Config, filters providers.Filters) *Client {
-	return &Client{
-		filters: filters,
-		config:  c,
-	}
+func New(config *providers.Config, filters providers.Filters) *Client {
+	return &Client{filters, config}
 }
 
 func (c *Client) Name() string {
@@ -43,14 +40,13 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 	if err != nil {
 		return fmt.Errorf("failed to fetch wayback pagination: %s", err)
 	}
+
 	for page := uint(0); page < pages; page++ {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			// make HTTP request
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
@@ -70,11 +66,9 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 			}
 
 			// output results
-			for i, entry := range result {
-				// Skip first result by default
-				if i != 0 {
-					results <- entry[0]
-				}
+			// Slicing as [1:] to skip first result by default
+			for _, entry := range result[1:] {
+				results <- entry[0]
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/valyala/fasthttp"
 )
 
@@ -21,13 +22,12 @@ type URLScan struct {
 type Config struct {
 	Threads           uint
 	Timeout           uint
-	Verbose           bool
 	MaxRetries        uint
 	IncludeSubdomains bool
 	RemoveParameters  bool
 	Client            *fasthttp.Client
 	Providers         []string
-	Blacklist         map[string]struct{}
+	Blacklist         mapset.Set[string]
 	Output            string
 	JSON              bool
 	URLScan           URLScan

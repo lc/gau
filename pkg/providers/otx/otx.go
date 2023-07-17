@@ -47,14 +47,12 @@ func (c *Client) Name() string {
 
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
 paginate:
-	for page := 1; ; page++ {
+	for page := uint(1); ; page++ {
 		select {
 		case <-ctx.Done():
 			break paginate
 		default:
-			if c.config.Verbose {
-				logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
-			}
+			logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
 			if err != nil {
@@ -77,20 +75,18 @@ paginate:
 	return nil
 }
 
-func (c *Client) formatURL(domain string, page int) string {
+func (c *Client) formatURL(domain string, page uint) string {
+	category := "hostname"
 	if !domainutil.HasSubdomain(domain) {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/domain/%s/url_list?limit=100&page=%d",
-			domain, page,
-		)
-	} else if domainutil.HasSubdomain(domain) && c.config.IncludeSubdomains {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/domain/%s/url_list?limit=100&page=%d",
-			domainutil.Domain(domain), page,
-		)
-	} else {
-		return fmt.Sprintf(_BaseURL+"api/v1/indicators/hostname/%s/url_list?limit=100&page=%d",
-			domain, page,
-		)
+		category = "domain"
 	}
+	if domainutil.HasSubdomain(domain) && c.config.IncludeSubdomains {
+		domain = domainutil.Domain(domain)
+		category = "domain"
+	}
+
+	return fmt.Sprintf("%sapi/v1/indicators/%s/%s/url_list?limit=100&page=%d", _BaseURL, category, domain, page)
+
 }
 
 var _BaseURL = "https://otx.alienvault.com/"

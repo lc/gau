@@ -79,7 +79,7 @@ work:
 					wg.Add(1)
 					go func(p providers.Provider) {
 						defer wg.Done()
-						if err := p.Fetch(ctx, domain, results); err != nil && r.config.Verbose {
+						if err := p.Fetch(ctx, domain, results); err != nil {
 							logrus.WithField("provider", p.Name()).Warnf("%s - %v", domain, err)
 						}
 					}(p)

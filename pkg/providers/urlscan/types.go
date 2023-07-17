@@ -1,7 +1,6 @@
 package urlscan
 
 import (
-	"reflect"
 	"strings"
 )
 
@@ -29,12 +28,10 @@ type archivedPage struct {
 
 func parseSort(sort []interface{}) string {
 	var sortParam []string
-	for i := 0; i < len(sort); i++ {
-		t := reflect.TypeOf(sort[i])
-		v := reflect.ValueOf(sort[i])
-		switch t.Kind() {
-		case reflect.String:
-			sortParam = append(sortParam, v.String())
+	for _, t := range sort {
+		switch t.(type) {
+		case string:
+			sortParam = append(sortParam, t.(string))
 		}
 	}
 	return strings.Join(sortParam, ",")
