@@ -3,7 +3,7 @@ verbose = false
 retries = 15
 subdomains = false
 parameters = false
-providers = ["gau","commoncrawl","otx","urlscan"]
+providers = ["wayback","commoncrawl","otx","urlscan"]
 blacklist = ["ttf","woff","svg","png","jpg"]
 json = false
 
