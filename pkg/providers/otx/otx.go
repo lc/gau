@@ -46,11 +46,10 @@ func (c *Client) Name() string {
 }
 
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
-paginate:
 	for page := uint(1); ; page++ {
 		select {
 		case <-ctx.Done():
-			break paginate
+			return nil
 		default:
 			logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
@@ -68,11 +67,10 @@ paginate:
 			}
 
 			if !result.HasNext {
-				break paginate
+				return nil
 			}
 		}
 	}
-	return nil
 }
 
 func (c *Client) formatURL(domain string, page uint) string {
