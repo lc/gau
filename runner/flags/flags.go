@@ -14,7 +14,6 @@ import (
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/lynxsecurity/pflag"
 	"github.com/lynxsecurity/viper"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
@@ -82,9 +81,9 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 		OTX: c.OTX,
 	}
 
-	logrus.SetLevel(log.ErrorLevel)
+	log.SetLevel(log.ErrorLevel)
 	if c.Verbose {
-		logrus.SetLevel(log.InfoLevel)
+		log.SetLevel(log.InfoLevel)
 	}
 	pc.Blacklist = mapset.NewThreadUnsafeSet(c.Blacklist...)
 	pc.Blacklist.Add("")
