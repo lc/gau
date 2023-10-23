@@ -13,36 +13,33 @@ import (
 )
 
 type Runner struct {
-	providers []providers.Provider
-	wg        sync.WaitGroup
+	sync.WaitGroup
 
-	config     *providers.Config
+	Providers  []providers.Provider
+	threads    uint
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
-type ProvidersMap map[string]providers.Filters
-
 // Init initializes the runner
-func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
-	r.config = c
+func (r *Runner) Init(c *providers.Config, providers []string, filters providers.Filters) error {
+	r.threads = c.Threads
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
-	for name, filters := range providerMap {
+	for _, name := range providers {
 		switch name {
 		case "urlscan":
-			r.providers = append(r.providers, urlscan.New(c))
+			r.Providers = append(r.Providers, urlscan.New(c))
 		case "otx":
-			o := otx.New(c)
-			r.providers = append(r.providers, o)
+			r.Providers = append(r.Providers, otx.New(c))
 		case "wayback":
-			r.providers = append(r.providers, wayback.New(c, filters))
+			r.Providers = append(r.Providers, wayback.New(c, filters))
 		case "commoncrawl":
 			cc, err := commoncrawl.New(c, filters)
 			if err != nil {
 				return fmt.Errorf("error instantiating commoncrawl: %v\n", err)
 			}
-			r.providers = append(r.providers, cc)
+			r.Providers = append(r.Providers, cc)
 		}
 	}
 
@@ -50,44 +47,41 @@ func (r *Runner) Init(c *providers.Config, providerMap ProvidersMap) error {
 }
 
 // Starts starts the worker
-func (r *Runner) Start(domains chan string, results chan string) {
-	for i := uint(0); i < r.config.Threads; i++ {
-		r.wg.Add(1)
+func (r *Runner) Start(workChan chan Work, results chan string) {
+	for i := uint(0); i < r.threads; i++ {
+		r.Add(1)
 		go func() {
-			defer r.wg.Done()
-			r.worker(r.ctx, domains, results)
+			defer r.Done()
+			r.worker(r.ctx, workChan, results)
 		}()
 	}
 }
 
-// Wait waits for the providers to finish fetching
-func (r *Runner) Wait() {
-	r.wg.Wait()
+type Work struct {
+	domain   string
+	provider providers.Provider
+}
+
+func NewWork(domain string, provider providers.Provider) Work {
+	return Work{domain, provider}
+}
+
+func (w *Work) Do(ctx context.Context, results chan string) error {
+	return w.provider.Fetch(ctx, w.domain, results)
 }
 
 // worker checks to see if the context is finished and executes the fetching process for each provider
-func (r *Runner) worker(ctx context.Context, domains chan string, results chan string) {
-work:
+func (r *Runner) worker(ctx context.Context, workChan chan Work, results chan string) {
 	for {
 		select {
 		case <-ctx.Done():
-			break work
-		case domain, ok := <-domains:
-			if ok {
-				var wg sync.WaitGroup
-				for _, p := range r.providers {
-					wg.Add(1)
-					go func(p providers.Provider) {
-						defer wg.Done()
-						if err := p.Fetch(ctx, domain, results); err != nil {
-							logrus.WithField("provider", p.Name()).Warnf("%s - %v", domain, err)
-						}
-					}(p)
-				}
-				wg.Wait()
-			}
+			return
+		case work, ok := <-workChan:
 			if !ok {
-				break work
+				return
+			}
+			if err := work.Do(ctx, results); err != nil {
+				logrus.WithField("provider", work.provider.Name()).Warnf("%s - %v", work.domain, err)
 			}
 		}
 	}

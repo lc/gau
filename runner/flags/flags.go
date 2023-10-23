@@ -233,13 +233,8 @@ func (o *Options) getFlagValues(c *Config) {
 		c.RemoveParameters = fp
 	}
 
-	if json {
-		c.JSON = true
-	}
-
-	if verbose {
-		c.Verbose = verbose
-	}
+	c.JSON = json
+	c.Verbose = verbose
 
 	// get filter flags
 	mc := o.viper.GetStringSlice("mc")

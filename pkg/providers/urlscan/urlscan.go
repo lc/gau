@@ -15,8 +15,6 @@ const (
 	Name = "urlscan"
 )
 
-var _ providers.Provider = (*Client)(nil)
-
 type Client struct {
 	config *providers.Config
 }
@@ -41,11 +39,10 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 		header.Value = c.config.URLScan.APIKey
 	}
 
-paginate:
 	for page := uint(0); ; page++ {
 		select {
 		case <-ctx.Done():
-			break paginate
+			return nil
 		default:
 			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, searchAfter)
@@ -62,7 +59,7 @@ paginate:
 			// rate limited
 			if result.Status == 429 {
 				logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429, probably being rate limited")
-				break paginate
+				return nil
 			}
 
 			total := len(result.Results)
@@ -73,20 +70,18 @@ paginate:
 
 				if i == total-1 {
 					sortParam := parseSort(res.Sort)
-					if sortParam != "" {
-						searchAfter = sortParam
-					} else {
-						break paginate
+					if sortParam == "" {
+						return nil
 					}
+					searchAfter = sortParam
 				}
 			}
 
 			if !result.HasMore {
-				break paginate
+				return nil
 			}
 		}
 	}
-	return nil
 }
 
 func (c *Client) formatURL(domain string, after string) string {

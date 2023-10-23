@@ -64,11 +64,10 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 		return nil
 	}
 
-paginate:
 	for page := uint(0); page < p.Pages; page++ {
 		select {
 		case <-ctx.Done():
-			break paginate
+			return nil
 		default:
 			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
