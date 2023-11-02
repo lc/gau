@@ -31,28 +31,26 @@ func main() {
 
 	results := make(chan string)
 
-	var out io.Writer
+	var out = os.Stdout
 	// Handle results in background
 	if config.Output != "" {
-		out, err := os.OpenFile(config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		out, err = os.OpenFile(config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatalf("Could not open output file: %v\n", err)
 		}
 		defer out.Close()
-	} else {
-		out = os.Stdout
 	}
 
-	writeWg := new(sync.WaitGroup)
+	var writeWg sync.WaitGroup
 	writeWg.Add(1)
-	go func(JSON bool) {
+	go func(out io.Writer, JSON bool) {
 		defer writeWg.Done()
 		if JSON {
 			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters)
 		} else if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters); err != nil {
 			log.Fatalf("error writing results: %v\n", err)
 		}
-	}(config.JSON)
+	}(out, config.JSON)
 
 	workChan := make(chan runner.Work)
 	gau.Start(workChan, results)
