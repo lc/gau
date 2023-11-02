@@ -22,12 +22,14 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[
 		if err != nil {
 			continue
 		}
-		if blacklistMap.Contains(strings.ToLower(path.Ext(u.Path))) {
+		if path.Ext(u.Path) != "" && blacklistMap.Contains(strings.ToLower(path.Ext(u.Path))) {
 			continue
 		}
-		if RemoveParameters && !lastURL.Add(u.Host+u.Path) {
+
+		if RemoveParameters && !lastURL.Contains(u.Host+u.Path) {
 			continue
 		}
+		lastURL.Add(u.Host + u.Path)
 
 		buf.B = append(buf.B, []byte(result)...)
 		buf.B = append(buf.B, "\n"...)
