@@ -12,17 +12,17 @@ getallurls (gau) fetches known URLs from AlienVault's [Open Threat Exchange](htt
 Examples:
 
 ```bash
-$ printf example.com | gau
-$ cat domains.txt | gau --threads 5
-$ gau example.com google.com
-$ gau --o example-urls.txt example.com
-$ gau --blacklist png,jpg,gif example.com
+printf example.com | gau
+cat domains.txt | gau --threads 5
+gau example.com google.com
+gau --o example-urls.txt example.com
+gau --blacklist png,jpg,gif example.com
 ```
 
 To display the help for the tool use the `-h` flag:
 
 ```bash
-$ gau -h
+gau -h
 ```
 
 | Flag | Description | Example |
@@ -55,22 +55,45 @@ An example configuration file can be found [here](https://github.com/lc/gau/blob
 ## Installation:
 ### From source:
 ```
-$ go install github.com/lc/gau/v2/cmd/gau@latest
+go install github.com/lc/gau/v2/cmd/gau@latest
 ```
 ### From github :
 ```
+cd ~/; \
 git clone https://github.com/lc/gau.git; \
-cd gau/cmd; \
+cd ~/gau/cmd/gau; \
 go build; \
-sudo mv gau /usr/local/bin/; \
-gau --version;
+sudo rm -rf /usr/bin/gau; \
+sudo mv gau /usr/bin/; \
+gau --version; \
+sudo rm -rf ~/gau; \
+sudo rm -rf ~/go; \
+cd ~/; \
+echo 'verbose = false
+retries = 15
+subdomains = false
+parameters = false
+providers = ["wayback","commoncrawl","otx","urlscan"]
+blacklist = ["ttf","woff","svg","png","jpg"]
+json = false
+
+[urlscan]
+  apikey = ""
+
+[filters]
+  from = ""
+  to = ""
+  matchstatuscodes = []
+  matchmimetypes = []
+  filterstatuscodes = []
+  filtermimetypes = ["image/png", "image/jpg", "image/svg+xml"]' > ~/.gau.toml;
 ```
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
 ```bash
-$ tar xvf gau_2.0.6_linux_amd64.tar.gz
-$ mv gau /usr/bin/gau
+tar xvf gau_x.x.x_linux_amd64.tar.gz
+sudo mv gau /usr/bin/gau
 ```
 
 ### From Docker:
