@@ -68,7 +68,25 @@ sudo mv gau /usr/bin/; \
 gau --version; \
 sudo rm -rf ~/gau; \
 sudo rm -rf ~/go; \
-cd ~/;
+cd ~/; \
+echo 'verbose = false
+retries = 15
+subdomains = false
+parameters = false
+providers = ["wayback","commoncrawl","otx","urlscan"]
+blacklist = ["ttf","woff","svg","png","jpg"]
+json = false
+
+[urlscan]
+  apikey = ""
+
+[filters]
+  from = ""
+  to = ""
+  matchstatuscodes = []
+  matchmimetypes = []
+  filterstatuscodes = []
+  filtermimetypes = ["image/png", "image/jpg", "image/svg+xml"]' > ~/.gau.toml;
 ```
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
