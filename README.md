@@ -59,11 +59,16 @@ $ go install github.com/lc/gau/v2/cmd/gau@latest
 ```
 ### From github :
 ```
+cd ~/; \
 git clone https://github.com/lc/gau.git; \
-cd gau/cmd; \
+cd ~/gau/cmd/gau; \
 go build; \
-sudo mv gau /usr/local/bin/; \
-gau --version;
+sudo rm -rf /usr/bin/gau; \
+sudo mv gau /usr/bin/; \
+gau --version; \
+sudo rm -rf ~/gau; \
+sudo rm -rf ~/go; \
+cd ~/;
 ```
 ### From binary:
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
