@@ -12,17 +12,17 @@ getallurls (gau) fetches known URLs from AlienVault's [Open Threat Exchange](htt
 Examples:
 
 ```bash
-$ printf example.com | gau
-$ cat domains.txt | gau --threads 5
-$ gau example.com google.com
-$ gau --o example-urls.txt example.com
-$ gau --blacklist png,jpg,gif example.com
+ printf example.com | gau
+ cat domains.txt | gau --threads 5
+ gau example.com google.com
+ gau --o example-urls.txt example.com
+ gau --blacklist png,jpg,gif example.com
 ```
 
 To display the help for the tool use the `-h` flag:
 
 ```bash
-$ gau -h
+ gau -h
 ```
 
 | Flag | Description | Example |
@@ -55,7 +55,7 @@ An example configuration file can be found [here](https://github.com/lc/gau/blob
 ## Installation:
 ### From source:
 ```
-$ go install github.com/lc/gau/v2/cmd/gau@latest
+ go install github.com/lc/gau/v2/cmd/gau@latest
 ```
 ### From github :
 ```
@@ -69,8 +69,8 @@ gau --version;
 You can download the pre-built binaries from the [releases](https://github.com/lc/gau/releases/) page and then move them into your $PATH.
 
 ```bash
-$ tar xvf gau_2.0.6_linux_amd64.tar.gz
-$ mv gau /usr/bin/gau
+ tar xvf gau_2.0.6_linux_amd64.tar.gz
+ mv gau /usr/bin/gau
 ```
 
 ### From Docker:
