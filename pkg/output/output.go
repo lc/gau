@@ -1,20 +1,35 @@
 package output
 
 import (
-	mapset "github.com/deckarep/golang-set/v2"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/valyala/bytebufferpool"
 	"io"
 	"net/url"
 	"path"
 	"strings"
+
+	mapset "github.com/deckarep/golang-set/v2"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/valyala/bytebufferpool"
 )
 
 type JSONResult struct {
 	Url string `json:"url"`
 }
 
-func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool) error {
+func Blacklisted(u *url.URL, blacklistMap mapset.Set[string], blacklistpathsMap mapset.Set[string]) bool {
+	if path.Ext(u.Path) != "" {
+		if blacklistMap.Contains(strings.ToLower(path.Ext(u.Path))) || blacklistMap.Contains(strings.ToLower(path.Ext(u.RawQuery))) {
+			return true
+		}
+		for path := range blacklistpathsMap.Iter() {
+			if strings.Contains(u.Path, path) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], blacklistpathsMap mapset.Set[string], RemoveParameters bool) error {
 	lastURL := mapset.NewThreadUnsafeSet[string]()
 	for result := range results {
 		buf := bytebufferpool.Get()
@@ -22,7 +37,8 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[
 		if err != nil {
 			continue
 		}
-		if path.Ext(u.Path) != "" && blacklistMap.Contains(strings.ToLower(path.Ext(u.Path))) {
+
+		if Blacklisted(u, blacklistMap, blacklistpathsMap) {
 			continue
 		}
 
@@ -42,7 +58,7 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[
 	return nil
 }
 
-func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool) {
+func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], blacklistpathsMap mapset.Set[string], RemoveParameters bool) {
 	var jr JSONResult
 	enc := jsoniter.NewEncoder(writer)
 	for result := range results {
@@ -50,7 +66,7 @@ func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.
 		if err != nil {
 			continue
 		}
-		if blacklistMap.Contains(strings.ToLower(path.Ext(u.Path))) {
+		if Blacklisted(u, blacklistMap, blacklistpathsMap) {
 			continue
 		}
 		jr.Url = result
