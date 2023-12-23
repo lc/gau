@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/valyala/fasthttp"
 )
@@ -28,6 +29,7 @@ type Config struct {
 	Client            *fasthttp.Client
 	Providers         []string
 	Blacklist         mapset.Set[string]
+	BlacklistPaths    mapset.Set[string]
 	Output            string
 	JSON              bool
 	URLScan           URLScan

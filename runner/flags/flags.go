@@ -35,6 +35,7 @@ type Config struct {
 	RemoveParameters  bool              `mapstructure:"parameters"`
 	Providers         []string          `mapstructure:"providers"`
 	Blacklist         []string          `mapstructure:"blacklist"`
+	BlacklistPaths    []string          `mapstructure:"blacklist_paths"`
 	JSON              bool              `mapstructure:"json"`
 	URLScan           URLScanConfig     `mapstructure:"urlscan"`
 	OTX               string            `mapstructure:"otx"`
@@ -87,6 +88,9 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 	}
 	pc.Blacklist = mapset.NewThreadUnsafeSet(c.Blacklist...)
 	pc.Blacklist.Add("")
+
+	pc.BlacklistPaths = mapset.NewThreadUnsafeSet(c.BlacklistPaths...)
+	pc.BlacklistPaths.Add("")
 	return pc, nil
 }
 
@@ -103,6 +107,7 @@ func New() *Options {
 	pflag.Uint("retries", 0, "retries for HTTP client")
 	pflag.String("proxy", "", "http proxy to use")
 	pflag.StringSlice("blacklist", []string{}, "list of extensions to skip")
+	pflag.StringSlice("blacklist_paths", []string{}, "list of paths to skip")
 	pflag.StringSlice("providers", []string{}, "list of providers to use (wayback,commoncrawl,otx,urlscan)")
 	pflag.Bool("subs", false, "include subdomains of target domain")
 	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
@@ -172,6 +177,7 @@ func (o *Options) DefaultConfig() *Config {
 		RemoveParameters:  false,
 		Providers:         []string{"wayback", "commoncrawl", "otx", "urlscan"},
 		Blacklist:         []string{},
+		BlacklistPaths:    []string{},
 		JSON:              false,
 		Outfile:           "",
 	}
@@ -191,6 +197,7 @@ func (o *Options) getFlagValues(c *Config) {
 	fetchers := o.viper.GetStringSlice("providers")
 	threads := o.viper.GetUint("threads")
 	blacklist := o.viper.GetStringSlice("blacklist")
+	blacklist_paths := o.viper.GetStringSlice("blacklist_paths")
 	subs := o.viper.GetBool("subs")
 	fp := o.viper.GetBool("fp")
 
@@ -213,7 +220,27 @@ func (o *Options) getFlagValues(c *Config) {
 
 	// set if --blacklist flag is specified, otherwise use default
 	if len(blacklist) > 0 {
-		c.Blacklist = blacklist
+		for _, value := range blacklist {
+			if strings.HasPrefix(value, ".") {
+				c.Blacklist = append(c.Blacklist, value)
+			} else {
+				c.Blacklist = append(c.Blacklist, "."+value)
+			}
+		}
+	}
+
+	// set if --blacklist_path flag is specified, otherwise use default
+	if len(blacklist_paths) > 0 {
+		for _, path := range blacklist_paths {
+			if !strings.HasPrefix(path, "http") {
+				if !strings.HasPrefix(path, "/") {
+					c.BlacklistPaths = append(c.BlacklistPaths, "/"+path)
+				}
+			} else {
+				u, _ := url.Parse(path)
+				c.BlacklistPaths = append(c.BlacklistPaths, u.Path)
+			}
+		}
 	}
 
 	// set if --providers flag is specified, otherwise use default

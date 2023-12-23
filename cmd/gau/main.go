@@ -46,8 +46,8 @@ func main() {
 	go func(out io.Writer, JSON bool) {
 		defer writeWg.Done()
 		if JSON {
-			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters)
-		} else if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters); err != nil {
+			output.WriteURLsJSON(out, results, config.Blacklist, config.BlacklistPaths, config.RemoveParameters)
+		} else if err = output.WriteURLs(out, results, config.Blacklist, config.BlacklistPaths, config.RemoveParameters); err != nil {
 			log.Fatalf("error writing results: %v\n", err)
 		}
 	}(out, config.JSON)

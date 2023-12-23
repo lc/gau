@@ -28,6 +28,7 @@ $ gau -h
 | Flag | Description | Example |
 |------|-------------|---------|
 |`--blacklist`| list of extensions to skip | gau --blacklist ttf,woff,svg,png|
+|`--blacklist_path`| list of paths to skip | gau --blacklist_path https://example.com/path/to/something or gau --blacklist_path path/to/something|
 |`--fc`| list of status codes to filter | gau --fc 404,302 |
 |`--from`| fetch urls from date (format: YYYYMM) | gau --from 202101 |
 |`--ft`| list of mime-types to filter | gau --ft text/plain|
