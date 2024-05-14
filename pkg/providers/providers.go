@@ -29,6 +29,7 @@ type Config struct {
 	Client            *fasthttp.Client
 	Providers         []string
 	Blacklist         mapset.Set[string]
+	BlacklistPaths    mapset.Set[string]
 	Output            string
 	JSON              bool
 	URLScan           URLScan
