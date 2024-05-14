@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
@@ -30,6 +31,7 @@ func New(c *providers.Config) *Client {
 func (c *Client) Name() string {
 	return Name
 }
+
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
 	var searchAfter string
 	var header httpclient.Header
