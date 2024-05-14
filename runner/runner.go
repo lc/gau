@@ -16,17 +16,14 @@ import (
 type Runner struct {
 	sync.WaitGroup
 
-	Providers  []providers.Provider
-	threads    uint
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	Providers []providers.Provider
+	threads   uint
+	ctx       context.Context
 }
 
 // Init initializes the runner
 func (r *Runner) Init(c *providers.Config, providers []string, filters providers.Filters) error {
 	r.threads = c.Threads
-	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
-
 	for _, name := range providers {
 		switch name {
 		case "urlscan":
@@ -48,12 +45,12 @@ func (r *Runner) Init(c *providers.Config, providers []string, filters providers
 }
 
 // Starts starts the worker
-func (r *Runner) Start(workChan chan Work, results chan string) {
+func (r *Runner) Start(ctx context.Context, workChan chan Work, results chan string) {
 	for i := uint(0); i < r.threads; i++ {
 		r.Add(1)
 		go func() {
 			defer r.Done()
-			r.worker(r.ctx, workChan, results)
+			r.worker(ctx, workChan, results)
 		}()
 	}
 }

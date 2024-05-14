@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"os"
 	"sync"
@@ -51,9 +52,10 @@ func main() {
 			log.Fatalf("error writing results: %v\n", err)
 		}
 	}(out, config.JSON)
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	workChan := make(chan runner.Work)
-	gau.Start(workChan, results)
+	gau.Start(ctx, workChan, results)
 	domains := flags.Args()
 	if len(domains) > 0 {
 		for _, provider := range gau.Providers {
@@ -63,13 +65,14 @@ func main() {
 		}
 	} else {
 		sc := bufio.NewScanner(os.Stdin)
-		for _, provider := range gau.Providers {
-			for sc.Scan() {
-				workChan <- runner.NewWork(sc.Text(), provider)
+		for sc.Scan() {
+			domain := sc.Text()
+			for _, provider := range gau.Providers {
+				workChan <- runner.NewWork(domain, provider)
 			}
-			if err := sc.Err(); err != nil {
-				log.Fatal(err)
-			}
+		}
+		if err := sc.Err(); err != nil {
+			log.Fatal(err)
 		}
 	}
 	close(workChan)
