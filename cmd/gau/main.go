@@ -31,10 +31,10 @@ func main() {
 
 	results := make(chan string)
 
-	var out = os.Stdout
+	out := os.Stdout
 	// Handle results in background
 	if config.Output != "" {
-		out, err = os.OpenFile(config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		out, err = os.OpenFile(config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			log.Fatalf("Could not open output file: %v\n", err)
 		}
@@ -54,7 +54,6 @@ func main() {
 
 	workChan := make(chan runner.Work)
 	gau.Start(workChan, results)
-
 	domains := flags.Args()
 	if len(domains) > 0 {
 		for _, provider := range gau.Providers {
@@ -67,15 +66,12 @@ func main() {
 		for _, provider := range gau.Providers {
 			for sc.Scan() {
 				workChan <- runner.NewWork(sc.Text(), provider)
-
-				if err := sc.Err(); err != nil {
-					log.Fatal(err)
-				}
+			}
+			if err := sc.Err(); err != nil {
+				log.Fatal(err)
 			}
 		}
-
 	}
-
 	close(workChan)
 
 	// wait for providers to fetch URLS

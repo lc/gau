@@ -3,6 +3,7 @@ package otx
 import (
 	"context"
 	"fmt"
+
 	"github.com/bobesa/go-domain-util/domainutil"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
@@ -84,7 +85,6 @@ func (c *Client) formatURL(domain string, page uint) string {
 	}
 
 	return fmt.Sprintf("%sapi/v1/indicators/%s/%s/url_list?limit=100&page=%d", _BaseURL, category, domain, page)
-
 }
 
 var _BaseURL = "https://otx.alienvault.com/"

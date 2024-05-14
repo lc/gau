@@ -1,13 +1,14 @@
 package output
 
 import (
-	mapset "github.com/deckarep/golang-set/v2"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/valyala/bytebufferpool"
 	"io"
 	"net/url"
 	"path"
 	"strings"
+
+	mapset "github.com/deckarep/golang-set/v2"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/valyala/bytebufferpool"
 )
 
 type JSONResult struct {

@@ -4,9 +4,7 @@ import (
 	"strings"
 )
 
-var (
-	_BaseURL = "https://urlscan.io/"
-)
+var _BaseURL = "https://urlscan.io/"
 
 type apiResponse struct {
 	Status  int            `json:"status"`
