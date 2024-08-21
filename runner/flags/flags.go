@@ -97,6 +97,7 @@ type Options struct {
 func New() *Options {
 	v := viper.New()
 
+	pflag.String("config", "", "custom config file location")
 	pflag.String("o", "", "filename to write results to")
 	pflag.Uint("threads", 1, "number of workers to spawn")
 	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
@@ -133,6 +134,12 @@ func Args() []string {
 }
 
 func (o *Options) ReadInConfig() (*Config, error) {
+	configPath := o.viper.GetString("config")
+
+	if configPath != "" {
+		return o.ReadConfigFile(configPath)
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return o.DefaultConfig(), err
