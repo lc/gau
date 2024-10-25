@@ -99,6 +99,7 @@ func New() *Options {
 	v := viper.New()
 
 	pflag.String("o", "", "filename to write results to")
+	pflag.String("config", "", "location of config file (default $HOME/.gau.toml or %USERPROFILE%\\.gau.toml)")
 	pflag.Uint("threads", 1, "number of workers to spawn")
 	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
 	pflag.Uint("retries", 0, "retries for HTTP client")
@@ -134,12 +135,17 @@ func Args() []string {
 }
 
 func (o *Options) ReadInConfig() (*Config, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return o.DefaultConfig(), err
+	confFile := o.viper.GetString("config")
+
+	if confFile == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return o.DefaultConfig(), err
+		}
+
+		confFile = filepath.Join(home, ".gau.toml")
 	}
 
-	confFile := filepath.Join(home, ".gau.toml")
 	return o.ReadConfigFile(confFile)
 }
 
