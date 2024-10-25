@@ -2,6 +2,7 @@ package flags
 
 import (
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -143,6 +144,10 @@ func (o *Options) ReadInConfig() (*Config, error) {
 }
 
 func (o *Options) ReadConfigFile(name string) (*Config, error) {
+	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
+		return o.DefaultConfig(), fmt.Errorf("Config file %s not found, using default config", name)
+	}
+
 	o.viper.SetConfigFile(name)
 
 	if err := o.viper.ReadInConfig(); err != nil {
