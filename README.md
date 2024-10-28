@@ -28,6 +28,7 @@ $ gau -h
 | Flag | Description | Example |
 |------|-------------|---------|
 |`--blacklist`| list of extensions to skip | gau --blacklist ttf,woff,svg,png|
+|`--config` | Use alternate configuration file (default `$HOME/config.toml` or `%USERPROFILE%\.gau.toml`) | gau --config $HOME/.config/gau.toml|
 |`--fc`| list of status codes to filter | gau --fc 404,302 |
 |`--from`| fetch urls from date (format: YYYYMM) | gau --from 202101 |
 |`--ft`| list of mime-types to filter | gau --ft text/plain|
@@ -48,7 +49,9 @@ $ gau -h
 
 
 ## Configuration Files
-gau automatically looks for a configuration file at `$HOME/.gau.toml` or`%USERPROFILE%\.gau.toml`. You can specify options and they will be used for every subsequent run of gau. Any options provided via command line flags will override options set in the configuration file.
+gau automatically looks for a configuration file at `$HOME/.gau.toml` or`%USERPROFILE%\.gau.toml`. You can point to a different configuration file using the `--config` flag. **If the configuration file is not found, gau will still run with a default configuration, but will output a message to stderr**.
+
+You can specify options and they will be used for every subsequent run of gau. Any options provided via command line flags will override options set in the configuration file.
 
 An example configuration file can be found [here](https://github.com/lc/gau/blob/master/.gau.toml)
 

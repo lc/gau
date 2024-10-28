@@ -2,6 +2,7 @@ package flags
 
 import (
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -98,6 +99,7 @@ func New() *Options {
 	v := viper.New()
 
 	pflag.String("o", "", "filename to write results to")
+	pflag.String("config", "", "location of config file (default $HOME/.gau.toml or %USERPROFILE%\\.gau.toml)")
 	pflag.Uint("threads", 1, "number of workers to spawn")
 	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
 	pflag.Uint("retries", 0, "retries for HTTP client")
@@ -133,16 +135,25 @@ func Args() []string {
 }
 
 func (o *Options) ReadInConfig() (*Config, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return o.DefaultConfig(), err
+	confFile := o.viper.GetString("config")
+
+	if confFile == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return o.DefaultConfig(), err
+		}
+
+		confFile = filepath.Join(home, ".gau.toml")
 	}
 
-	confFile := filepath.Join(home, ".gau.toml")
 	return o.ReadConfigFile(confFile)
 }
 
 func (o *Options) ReadConfigFile(name string) (*Config, error) {
+	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
+		return o.DefaultConfig(), fmt.Errorf("Config file %s not found, using default config", name)
+	}
+
 	o.viper.SetConfigFile(name)
 
 	if err := o.viper.ReadInConfig(); err != nil {
