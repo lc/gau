@@ -12,6 +12,8 @@ builds:
       - amd64
       - 386
       - arm64
+    env:
+      - CGO_ENABLED=0
     ignore:
       - goos: darwin
         goarch: 386
@@ -24,7 +26,34 @@ archives:
     format_overrides:
         - goos: windows
           format: zip
-
+dockers:
+  - image_templates:
+    - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:{{ .Tag }}-amd64"
+    - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:latest-amd64"
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/amd64"
+  - image_templates:
+    - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:{{ .Tag }}-arm64"
+    - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:latest-arm64"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/arm64"
+docker_manifests:
+- name_template: '{{ .Env.DOCKER_HUB_USERNAME }}/gau:{{ .Tag }}'
+  image_templates:
+  - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:{{ .Tag }}-amd64"
+  - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:{{ .Tag }}-arm64"
+- name_template: '{{ .Env.DOCKER_HUB_USERNAME }}/gau:latest'
+  image_templates:
+  - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:latest-amd64"
+  - "{{ .Env.DOCKER_HUB_USERNAME }}/gau:latest-arm64"
 signs:
   - artifacts: checksum
     args: [ "--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}" ]
