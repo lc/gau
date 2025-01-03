@@ -18,7 +18,6 @@ type Runner struct {
 
 	Providers []providers.Provider
 	threads   uint
-	ctx       context.Context
 }
 
 // Init initializes the runner
