@@ -1,0 +1,30 @@
+version: 2
+before:
+  hooks:
+    - go mod download
+builds:
+  - binary: gau
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - 386
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 'arm64'
+    main: ./cmd/gau/
+archives:
+  - id: tgz
+    format: tar.gz
+    format_overrides:
+        - goos: windows
+          format: zip
+
+signs:
+  - artifacts: checksum
+    args: [ "--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}" ]
