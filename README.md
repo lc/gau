@@ -63,7 +63,7 @@ $ go install github.com/lc/gau/v2/cmd/gau@latest
 ### From github :
 ```
 git clone https://github.com/lc/gau.git; \
-cd gau/cmd; \
+cd gau/cmd/gau; \
 go build; \
 sudo mv gau /usr/local/bin/; \
 gau --version;
