@@ -2,6 +2,8 @@ package urlscan
 
 import (
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var _BaseURL = "https://urlscan.io/"
@@ -26,11 +28,15 @@ type archivedPage struct {
 
 func parseSort(sort []interface{}) string {
 	var sortParam []string
+
 	for _, t := range sort {
-		switch t.(type) {
+		switch v := t.(type) {
 		case string:
-			sortParam = append(sortParam, t.(string))
+			sortParam = append(sortParam, v)
+		case jsoniter.Number:
+			sortParam = append(sortParam, v.String())
 		}
 	}
+
 	return strings.Join(sortParam, ",")
 }
