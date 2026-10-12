@@ -39,7 +39,8 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		req.Header.Set("Accept", "*/*")
 		req.SetRequestURI(url)
 		respBody, err = doReq(c, req, timeout)
-		if err == nil {
+		// if error is nil or if our request is invalid, don't retry.
+		if err == nil || errors.Is(err, ErrBadRequest) {
 			break
 		}
 	}
