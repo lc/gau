@@ -2,7 +2,10 @@ package httpclient
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -12,7 +15,22 @@ var (
 	ErrNilResponse    = errors.New("unexpected nil response")
 	ErrNon200Response = errors.New("API responded with non-200 status code")
 	ErrBadRequest     = errors.New("API responded with 400 status code")
+	ErrRateLimited    = errors.New("API rate limited")
 )
+
+// StatusCodeError is an error type that carries an HTTP status code
+type StatusCodeError struct {
+	Code int
+	Msg  string
+}
+
+func (e *StatusCodeError) Error() string {
+	return fmt.Sprintf("%s (status code: %d)", e.Msg, e.Code)
+}
+
+func (e *StatusCodeError) Unwrap() error {
+	return errors.New(e.Msg)
+}
 
 type Header struct {
 	Key   string
@@ -39,6 +57,28 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		req.Header.Set("Accept", "*/*")
 		req.SetRequestURI(url)
 		respBody, err = doReq(c, req, timeout)
+
+		// Check if we should retry based on error type
+		if err != nil {
+			// Exponential backoff: 1s, 2s, 4s, 8s, 16s... with cap at 30s
+			backoffDuration := time.Duration(math.Pow(2, float64(retries-i))) * time.Second
+			if backoffDuration > 30*time.Second {
+				backoffDuration = 30 * time.Second
+			}
+			if i > 0 && shouldRetry(err) {
+				time.Sleep(backoffDuration)
+				continue
+			}
+		}
+
+		// Check for rate limit (429) or bad request (400) from error
+		if err != nil {
+			statusCode := getStatusCodeFromError(err)
+			if statusCode == 429 || statusCode == 400 {
+				return nil, ErrRateLimited
+			}
+		}
+
 		if err == nil {
 			break
 		}
@@ -47,6 +87,48 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		return nil, err
 	}
 	return respBody, nil
+}
+
+// shouldRetry determines if an error should trigger a retry
+func shouldRetry(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Network errors that should trigger retry
+	errMsg := err.Error()
+	retryableErrors := []string{
+		"connection refused",
+		"connection reset",
+		"connection timed out",
+		"no such host",
+		"timeout",
+		"server closed connection",
+		"network is unreachable",
+		"i/o timeout",
+	}
+	for _, pattern := range retryableErrors {
+		if containsIgnoreCase(errMsg, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsIgnoreCase checks if s contains substr (case-insensitive)
+func containsIgnoreCase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}
+
+// getStatusCodeFromError attempts to extract status code from error
+func getStatusCodeFromError(err error) int {
+	if err == nil {
+		return 0
+	}
+	var statusErr *StatusCodeError
+	if errors.As(err, &statusErr) {
+		return statusErr.Code
+	}
+	return 0
 }
 
 // doReq handles http requests
@@ -58,10 +140,12 @@ func doReq(c *fasthttp.Client, req *fasthttp.Request, timeout uint) ([]byte, err
 		return nil, err
 	}
 	if resp.StatusCode() != 200 {
-		if resp.StatusCode() == 400 {
-			return nil, ErrBadRequest
+		errMsg := fmt.Sprintf("API responded with status code %d", resp.StatusCode())
+		// Return wrapped error with status code for proper handling
+		return nil, &StatusCodeError{
+			Code: resp.StatusCode(),
+			Msg:  errMsg,
 		}
-		return nil, ErrNon200Response
 	}
 	if resp.Body() == nil {
 		return nil, ErrNilResponse

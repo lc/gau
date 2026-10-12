@@ -29,6 +29,7 @@ type Config struct {
 	Filters           providers.Filters `mapstructure:"filters"`
 	Proxy             string            `mapstructure:"proxy"`
 	Threads           uint              `mapstructure:"threads"`
+	ProviderThreads   uint              `mapstructure:"provider-threads"`
 	Timeout           uint              `mapstructure:"timeout"`
 	Verbose           bool              `mapstructure:"verbose"`
 	MaxRetries        uint              `mapstructure:"retries"`
@@ -62,6 +63,7 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 
 	pc := &providers.Config{
 		Threads:           c.Threads,
+		ProviderThreads:   c.ProviderThreads,
 		Timeout:           c.Timeout,
 		MaxRetries:        c.MaxRetries,
 		IncludeSubdomains: c.IncludeSubdomains,
@@ -101,6 +103,7 @@ func New() *Options {
 	pflag.String("o", "", "filename to write results to")
 	pflag.String("config", "", "location of config file (default $HOME/.gau.toml or %USERPROFILE%\\.gau.toml)")
 	pflag.Uint("threads", 1, "number of workers to spawn")
+	pflag.Uint("provider-threads", 3, "number of threads per provider for concurrent pagination")
 	pflag.Uint("timeout", 45, "timeout (in seconds) for HTTP client")
 	pflag.Uint("retries", 0, "retries for HTTP client")
 	pflag.String("proxy", "", "http proxy to use")
@@ -177,6 +180,7 @@ func (o *Options) DefaultConfig() *Config {
 		Proxy:             "",
 		Timeout:           45,
 		Threads:           1,
+		ProviderThreads:   3,
 		Verbose:           false,
 		MaxRetries:        5,
 		IncludeSubdomains: false,
@@ -201,6 +205,7 @@ func (o *Options) getFlagValues(c *Config) {
 	outfile := o.viper.GetString("o")
 	fetchers := o.viper.GetStringSlice("providers")
 	threads := o.viper.GetUint("threads")
+	providerThreads := o.viper.GetUint("provider-threads")
 	blacklist := o.viper.GetStringSlice("blacklist")
 	subs := o.viper.GetBool("subs")
 	fp := o.viper.GetBool("fp")
@@ -220,6 +225,11 @@ func (o *Options) getFlagValues(c *Config) {
 	// set if --threads flag is set, otherwise use default
 	if threads > 1 {
 		c.Threads = threads
+	}
+
+	// set if --provider-threads flag is set, otherwise use default
+	if providerThreads > 0 {
+		c.ProviderThreads = providerThreads
 	}
 
 	// set if --blacklist flag is specified, otherwise use default

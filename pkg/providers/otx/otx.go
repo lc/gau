@@ -2,7 +2,9 @@ package otx
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/bobesa/go-domain-util/domainutil"
 	jsoniter "github.com/json-iterator/go"
@@ -47,31 +49,108 @@ func (c *Client) Name() string {
 }
 
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
-	for page := uint(1); ; page++ {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			logrus.WithFields(logrus.Fields{"provider": Name, "page": page - 1}).Infof("fetching %s", domain)
-			apiURL := c.formatURL(domain, page)
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
-			if err != nil {
-				return fmt.Errorf("failed to fetch alienvault(%d): %s", page, err)
-			}
-			var result otxResult
-			if err := jsoniter.Unmarshal(resp, &result); err != nil {
-				return fmt.Errorf("failed to decode otx results for page %d: %s", page, err)
-			}
+	numThreads := c.config.ProviderThreads
+	if numThreads == 0 {
+		numThreads = 3
+	}
 
-			for _, entry := range result.URLList {
-				results <- entry.URL
-			}
+	pageChan := make(chan uint, numThreads)
+	var wg sync.WaitGroup
+	var fetchErr error
+	var errMu sync.Mutex
+	var stopOnce sync.Once
+	stopCh := make(chan struct{})
 
-			if !result.HasNext {
-				return nil
+	// Page dispatcher: sequentially increments pages, stops when receiving stop signal
+	go func() {
+		defer close(pageChan)
+		for page := uint(1); ; page++ {
+			select {
+			case <-ctx.Done():
+				return
+			case <-stopCh:
+				return
+			case pageChan <- page:
 			}
 		}
+	}()
+
+	// Workers: fetch pages from pageChan
+	for i := uint(0); i < numThreads; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for p := range pageChan {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				logrus.WithFields(logrus.Fields{"provider": Name, "page": p - 1}).Infof("fetching %s", domain)
+				apiURL := c.formatURL(domain, p)
+				resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
+				if err != nil {
+					var statusErr *httpclient.StatusCodeError
+					if errors.As(err, &statusErr) {
+						logrus.WithFields(logrus.Fields{
+							"provider": Name,
+							"domain":   domain,
+							"page":     p - 1,
+							"status":   statusErr.Code,
+							"error":    statusErr.Error(),
+						}).Warn("OTX HTTP error")
+						if statusErr.Code == 429 {
+							errMu.Lock()
+							if fetchErr == nil {
+								fetchErr = fmt.Errorf("OTX rate limited at page %d", p)
+							}
+							errMu.Unlock()
+							stopOnce.Do(func() { close(stopCh) })
+							return
+						}
+					} else {
+						logrus.WithFields(logrus.Fields{
+							"provider": Name,
+							"domain":   domain,
+							"page":     p - 1,
+							"error":    err.Error(),
+						}).Warn("failed to fetch OTX")
+						errMu.Lock()
+						if fetchErr == nil {
+							fetchErr = fmt.Errorf("failed to fetch alienvault(%d): %s", p, err)
+						}
+						errMu.Unlock()
+					}
+					continue
+				}
+				var result otxResult
+				if err := jsoniter.Unmarshal(resp, &result); err != nil {
+					errMu.Lock()
+					if fetchErr == nil {
+						fetchErr = fmt.Errorf("failed to decode otx results for page %d: %s", p, err)
+					}
+					errMu.Unlock()
+					continue
+				}
+
+				for _, entry := range result.URLList {
+					select {
+					case <-ctx.Done():
+						return
+					case results <- entry.URL:
+					}
+				}
+
+				if !result.HasNext {
+					stopOnce.Do(func() { close(stopCh) })
+					return
+				}
+			}
+		}()
 	}
+
+	wg.Wait()
+	return fetchErr
 }
 
 func (c *Client) formatURL(domain string, page uint) string {

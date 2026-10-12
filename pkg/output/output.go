@@ -3,8 +3,10 @@ package output
 import (
 	"io"
 	"net/url"
+	"os"
 	"path"
 	"strings"
+	"sync/atomic"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	jsoniter "github.com/json-iterator/go"
@@ -15,7 +17,7 @@ type JSONResult struct {
 	Url string `json:"url"`
 }
 
-func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool) error {
+func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool, urlCount *int64) error {
 	lastURL := mapset.NewThreadUnsafeSet[string]()
 	for result := range results {
 		buf := bytebufferpool.Get()
@@ -41,12 +43,17 @@ func WriteURLs(writer io.Writer, results <-chan string, blacklistMap mapset.Set[
 		if err != nil {
 			return err
 		}
+		atomic.AddInt64(urlCount, 1)
+		// Real-time flush: sync stdout after each write to prevent data loss
+		if writer == os.Stdout {
+			os.Stdout.Sync()
+		}
 		bytebufferpool.Put(buf)
 	}
 	return nil
 }
 
-func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool) {
+func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.Set[string], RemoveParameters bool, urlCount *int64) {
 	var jr JSONResult
 	enc := jsoniter.NewEncoder(writer)
 	for result := range results {
@@ -62,6 +69,11 @@ func WriteURLsJSON(writer io.Writer, results <-chan string, blacklistMap mapset.
 		if err := enc.Encode(jr); err != nil {
 			// todo: handle this error
 			continue
+		}
+		atomic.AddInt64(urlCount, 1)
+		// Real-time flush: sync stdout after each write to prevent data loss
+		if writer == os.Stdout {
+			os.Stdout.Sync()
 		}
 	}
 }

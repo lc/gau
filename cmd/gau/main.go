@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/lc/gau/v2/pkg/output"
 	"github.com/lc/gau/v2/runner"
@@ -14,6 +15,8 @@ import (
 )
 
 func main() {
+	startTime := time.Now()
+
 	cfg, err := flags.New().ReadInConfig()
 	if err != nil {
 		log.Warnf("error reading config: %v", err)
@@ -43,12 +46,13 @@ func main() {
 	}
 
 	var writeWg sync.WaitGroup
+	var urlCount int64
 	writeWg.Add(1)
 	go func(out io.Writer, JSON bool) {
 		defer writeWg.Done()
 		if JSON {
-			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters)
-		} else if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters); err != nil {
+			output.WriteURLsJSON(out, results, config.Blacklist, config.RemoveParameters, &urlCount)
+		} else if err = output.WriteURLs(out, results, config.Blacklist, config.RemoveParameters, &urlCount); err != nil {
 			log.Fatalf("error writing results: %v\n", err)
 		}
 	}(out, config.JSON)
@@ -85,4 +89,13 @@ func main() {
 
 	// wait for writer to finish output
 	writeWg.Wait()
+
+	// Calculate duration
+	duration := time.Since(startTime)
+
+	// Log summary
+	log.Infof("=== Gau Execution Summary ===")
+	log.Infof("Total URLs: %d", urlCount)
+	log.Infof("Duration: %v", duration)
+	log.Infof("=============================")
 }

@@ -50,6 +50,12 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 			apiURL := c.formatURL(domain, searchAfter)
 			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout, header)
 			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"provider": Name,
+					"domain":   domain,
+					"page":     page,
+					"error":    err.Error(),
+				}).Warn("failed to fetch urlscan")
 				return fmt.Errorf("failed to fetch urlscan: %s", err)
 			}
 			var result apiResponse
@@ -60,7 +66,12 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 			}
 			// rate limited
 			if result.Status == 429 {
-				logrus.WithField("provider", "urlscan").Warnf("urlscan responded with 429, probably being rate limited")
+				logrus.WithFields(logrus.Fields{
+					"provider": Name,
+					"domain":   domain,
+					"status":   429,
+					"response": string(resp),
+				}).Warn("urlscan rate limited")
 				return nil
 			}
 

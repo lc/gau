@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/lc/gau/v2/pkg/httpclient"
@@ -56,6 +57,11 @@ func (c *Client) Name() string {
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
 	p, err := c.getPagination(domain)
 	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"provider": Name,
+			"domain":   domain,
+			"error":    err.Error(),
+		}).Warn("failed to get pagination for commoncrawl")
 		return err
 	}
 	// 0 pages means no results
@@ -64,33 +70,111 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 		return nil
 	}
 
-	for page := uint(0); page < p.Pages; page++ {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
-			apiURL := c.formatURL(domain, page)
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
-			if err != nil {
-				return fmt.Errorf("failed to fetch commoncrawl(%d): %s", page, err)
-			}
+	numThreads := c.config.ProviderThreads
+	if numThreads == 0 {
+		numThreads = 3
+	}
 
-			sc := bufio.NewScanner(bytes.NewReader(resp))
-			for sc.Scan() {
-				var res apiResponse
-				if err := jsoniter.Unmarshal(sc.Bytes(), &res); err != nil {
-					return fmt.Errorf("failed to decode commoncrawl result:  %s", err)
-				}
-				if res.Error != "" {
-					return fmt.Errorf("received an error from commoncrawl: %s", res.Error)
-				}
+	// Cap threads to actual page count
+	if numThreads > p.Pages {
+		numThreads = p.Pages
+	}
 
-				results <- res.URL
+	pageChan := make(chan uint, numThreads)
+	var wg sync.WaitGroup
+	var fetchErr error
+	var errMu sync.Mutex
+
+	// Page dispatcher: send page numbers
+	go func() {
+		defer close(pageChan)
+		for page := uint(0); page < p.Pages; page++ {
+			select {
+			case <-ctx.Done():
+				return
+			case pageChan <- page:
 			}
 		}
+	}()
+
+	// Workers: fetch pages from pageChan
+	for i := uint(0); i < numThreads; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for page := range pageChan {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
+				apiURL := c.formatURL(domain, page)
+				resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
+				if err != nil {
+					var statusErr *httpclient.StatusCodeError
+					if errors.As(err, &statusErr) {
+						logrus.WithFields(logrus.Fields{
+							"provider": Name,
+							"domain":   domain,
+							"page":     page,
+							"status":   statusErr.Code,
+							"error":    statusErr.Error(),
+						}).Warn("CommonCrawl HTTP error")
+					} else {
+						logrus.WithFields(logrus.Fields{
+							"provider": Name,
+							"domain":   domain,
+							"page":     page,
+							"error":    err.Error(),
+						}).Warn("failed to fetch commoncrawl")
+					}
+					errMu.Lock()
+					if fetchErr == nil {
+						fetchErr = fmt.Errorf("failed to fetch commoncrawl(%d): %s", page, err)
+					}
+					errMu.Unlock()
+					continue
+				}
+
+				sc := bufio.NewScanner(bytes.NewReader(resp))
+				for sc.Scan() {
+					var res apiResponse
+					if err := jsoniter.Unmarshal(sc.Bytes(), &res); err != nil {
+						errMu.Lock()
+						if fetchErr == nil {
+							fetchErr = fmt.Errorf("failed to decode commoncrawl result:  %s", err)
+						}
+						errMu.Unlock()
+						continue
+					}
+					if res.Error != "" {
+						logrus.WithFields(logrus.Fields{
+							"provider": Name,
+							"domain":   domain,
+							"page":     page,
+							"response": res.Error,
+						}).Warn("CommonCrawl API error")
+						errMu.Lock()
+						if fetchErr == nil {
+							fetchErr = fmt.Errorf("received an error from commoncrawl: %s", res.Error)
+						}
+						errMu.Unlock()
+						continue
+					}
+
+					select {
+					case <-ctx.Done():
+						return
+					case results <- res.URL:
+					}
+				}
+			}
+		}()
 	}
-	return nil
+
+	wg.Wait()
+	return fetchErr
 }
 
 func (c *Client) formatURL(domain string, page uint) string {

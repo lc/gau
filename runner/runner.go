@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/lc/gau/v2/pkg/providers/commoncrawl"
@@ -18,12 +19,14 @@ type Runner struct {
 
 	Providers []providers.Provider
 	threads   uint
+	timeout   uint
 	ctx       context.Context
 }
 
 // Init initializes the runner
 func (r *Runner) Init(c *providers.Config, providers []string, filters providers.Filters) error {
 	r.threads = c.Threads
+	r.timeout = c.Timeout
 	for _, name := range providers {
 		switch name {
 		case "urlscan":
@@ -78,9 +81,29 @@ func (r *Runner) worker(ctx context.Context, workChan chan Work, results chan st
 			if !ok {
 				return
 			}
-			if err := work.Do(ctx, results); err != nil {
-				logrus.WithField("provider", work.provider.Name()).Warnf("%s - %v", work.domain, err)
+
+			// Create a timeout context for this provider using global timeout
+			providerTimeout := time.Duration(r.timeout) * time.Second
+			if providerTimeout == 0 {
+				providerTimeout = 45 * time.Second
 			}
+			// Cap provider timeout at 5 minutes to prevent single provider blocking
+			maxProviderTimeout := 5 * time.Minute
+			if providerTimeout > maxProviderTimeout {
+				providerTimeout = maxProviderTimeout
+			}
+
+			providerCtx, cancel := context.WithTimeout(ctx, providerTimeout)
+
+			if err := work.Do(providerCtx, results); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"provider": work.provider.Name(),
+					"domain":   work.domain,
+					"timeout":  providerTimeout,
+				}).Warnf("provider error: %v", err)
+			}
+
+			cancel()
 		}
 	}
 }
