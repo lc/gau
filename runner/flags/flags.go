@@ -5,11 +5,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"golang.org/x/net/http2"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/net/proxy"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/lc/gau/v2/pkg/providers"
@@ -40,6 +44,8 @@ type Config struct {
 	URLScan           URLScanConfig     `mapstructure:"urlscan"`
 	OTX               string            `mapstructure:"otx"`
 	Outfile           string            // output file to write to
+	CheckpointFile    string            `mapstructure:"checkpoint"`
+	ResumeFile        string            `mapstructure:"resume"`
 }
 
 func (c *Config) ProviderConfig() (*providers.Config, error) {
@@ -59,6 +65,43 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 			return nil, fmt.Errorf("unsupported proxy scheme: %s", parse.Scheme)
 		}
 	}
+	httpTransport := &http.Transport{}
+	if err := http2.ConfigureTransport(httpTransport); err != nil {
+		return nil, fmt.Errorf("configure HTTP/2: %w", err)
+	}
+
+	if c.Proxy != "" {
+		parse, err := url.Parse(c.Proxy)
+		if err != nil {
+			return nil, fmt.Errorf("proxy url: %v", err)
+		}
+
+		switch parse.Scheme {
+		case "http":
+			httpTransport.Proxy = http.ProxyURL(parse)
+
+		case "socks5":
+			socksDialer, err := proxy.SOCKS5(
+				"tcp",
+				parse.Host,
+				nil,
+				proxy.Direct,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("SOCKS5 proxy: %v", err)
+			}
+
+			contextDialer, ok := socksDialer.(proxy.ContextDialer)
+			if !ok {
+				return nil, fmt.Errorf("SOCKS5 dialer does not support context cancellation")
+			}
+
+			httpTransport.DialContext = contextDialer.DialContext
+
+		default:
+			return nil, fmt.Errorf("unsupported proxy scheme: %s", parse.Scheme)
+		}
+	}
 
 	pc := &providers.Config{
 		Threads:           c.Threads,
@@ -71,6 +114,9 @@ func (c *Config) ProviderConfig() (*providers.Config, error) {
 				InsecureSkipVerify: true,
 			},
 			Dial: dialer,
+		},
+		HTTPClient: &http.Client{
+			Transport: httpTransport,
 		},
 		Providers: c.Providers,
 		Output:    c.Outfile,
@@ -110,6 +156,8 @@ func New() *Options {
 	pflag.Bool("fp", false, "remove different parameters of the same endpoint")
 	pflag.Bool("verbose", false, "show verbose output")
 	pflag.Bool("json", false, "output as json")
+	pflag.String("checkpoint", "", "filename to save checkpoint progress")
+	pflag.String("resume", "", "checkpoint file to resume from")
 
 	// filter flags
 	pflag.StringSlice("mc", []string{}, "list of status codes to match")
@@ -199,6 +247,8 @@ func (o *Options) getFlagValues(c *Config) {
 	retries := o.viper.GetUint("retries")
 	proxy := o.viper.GetString("proxy")
 	outfile := o.viper.GetString("o")
+	checkpointFile := o.viper.GetString("checkpoint")
+	resumeFile := o.viper.GetString("resume")
 	fetchers := o.viper.GetStringSlice("providers")
 	threads := o.viper.GetUint("threads")
 	blacklist := o.viper.GetStringSlice("blacklist")
@@ -216,6 +266,13 @@ func (o *Options) getFlagValues(c *Config) {
 
 	if outfile != "" {
 		c.Outfile = outfile
+	}
+	if checkpointFile != "" {
+		c.CheckpointFile = checkpointFile
+	}
+
+	if resumeFile != "" {
+		c.ResumeFile = resumeFile
 	}
 	// set if --threads flag is set, otherwise use default
 	if threads > 1 {
