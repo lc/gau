@@ -1,8 +1,12 @@
 package httpclient
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -25,6 +29,7 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 		respBody []byte
 		err      error
 	)
+
 	retries := int(maxRetries)
 	for i := retries; i >= 0; i-- {
 		req = fasthttp.AcquireRequest()
@@ -35,19 +40,126 @@ func MakeRequest(c *fasthttp.Client, url string, maxRetries uint, timeout uint, 
 				req.Header.Set(header.Key, header.Value)
 			}
 		}
+
 		req.Header.Set(fasthttp.HeaderUserAgent, getUserAgent())
 		req.Header.Set("Accept", "*/*")
 		req.SetRequestURI(url)
+
 		respBody, err = doReq(c, req, timeout)
-		// if error is nil or if our request is invalid, don't retry.
+
+		// If the request succeeds or is invalid, don't retry.
 		if err == nil || errors.Is(err, ErrBadRequest) {
 			break
 		}
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return respBody, nil
+}
+
+func MakeRequestWithContext(
+	ctx context.Context,
+	c *http.Client,
+	url string,
+	maxRetries uint,
+	timeout uint,
+	headers ...Header,
+) ([]byte, error) {
+	var respBody []byte
+	var lastStatus int
+	var lastErr error
+
+	for i := uint(0); i <= maxRetries; i++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		reqCtx, cancel := context.WithTimeout(
+			ctx,
+			time.Duration(timeout)*time.Second,
+		)
+
+		req, err := http.NewRequestWithContext(
+			reqCtx,
+			http.MethodGet,
+			url,
+			nil,
+		)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+
+		for _, header := range headers {
+			if header.Key != "" {
+				req.Header.Set(header.Key, header.Value)
+			}
+		}
+
+		req.Header.Set("User-Agent", getUserAgent())
+		req.Header.Set("Accept", "*/*")
+
+		resp, err := c.Do(req)
+		if err != nil {
+			cancel()
+
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode == http.StatusBadRequest {
+			resp.Body.Close()
+			cancel()
+			return nil, ErrBadRequest
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastStatus = resp.StatusCode
+			resp.Body.Close()
+			cancel()
+			continue
+		}
+
+		respBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		cancel()
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+
+			lastErr = err
+			continue
+		}
+
+		if len(respBody) == 0 {
+			return nil, ErrNilResponse
+		}
+
+		return respBody, nil
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if lastStatus != 0 {
+		return nil, fmt.Errorf("%w: HTTP status %d", ErrNon200Response, lastStatus)
+	}
+
+	if lastErr != nil {
+		return nil, fmt.Errorf("HTTP request failed after retries: %w", lastErr)
+	}
+
+	return nil, ErrNon200Response
 }
 
 // doReq handles http requests

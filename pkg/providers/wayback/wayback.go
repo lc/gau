@@ -38,15 +38,27 @@ type waybackResult [][]string
 // Fetch fetches all urls for a given domain and sends them to a channel.
 // It returns an error should one occur.
 func (c *Client) Fetch(ctx context.Context, domain string, results chan string) error {
-	for page := uint(0); ; page++ {
+	startPage := uint(0)
+
+	if c.config.Checkpoint != nil {
+		startPage = c.config.Checkpoint.GetProgress(domain, Name)
+	}
+
+	for page := startPage; ; page++ {
 		select {
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		default:
 			logrus.WithFields(logrus.Fields{"provider": Name, "page": page}).Infof("fetching %s", domain)
 			apiURL := c.formatURL(domain, page)
 			// make HTTP request
-			resp, err := httpclient.MakeRequest(c.config.Client, apiURL, c.config.MaxRetries, c.config.Timeout)
+			resp, err := httpclient.MakeRequestWithContext(
+				ctx,
+				c.config.HTTPClient,
+				apiURL,
+				c.config.MaxRetries,
+				c.config.Timeout,
+			)
 			if err != nil {
 				if errors.Is(err, httpclient.ErrBadRequest) {
 					return nil
@@ -61,13 +73,27 @@ func (c *Client) Fetch(ctx context.Context, domain string, results chan string) 
 			// check if there's results, wayback's pagination response
 			// is not always correct when using a filter
 			if len(result) == 0 {
-				break
+				return nil
 			}
 
 			// output results
 			// Slicing as [1:] to skip first result by default
 			for _, entry := range result[1:] {
-				results <- entry[0]
+				select {
+				case results <- entry[0]:
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+			if c.config.Checkpoint != nil {
+				nextPage := page + 1
+				c.config.Checkpoint.SetProgress(domain, Name, nextPage)
+
+				if c.config.CheckpointFile != "" {
+					if err := c.config.Checkpoint.Save(c.config.CheckpointFile); err != nil {
+						return fmt.Errorf("failed to save checkpoint after page %d: %w", page, err)
+					}
+				}
 			}
 		}
 	}

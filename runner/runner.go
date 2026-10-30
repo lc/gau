@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/lc/gau/v2/pkg/checkpoint"
 	"github.com/lc/gau/v2/pkg/providers"
 	"github.com/lc/gau/v2/pkg/providers/commoncrawl"
 	"github.com/lc/gau/v2/pkg/providers/otx"
@@ -16,13 +17,16 @@ import (
 type Runner struct {
 	sync.WaitGroup
 
-	Providers []providers.Provider
-	threads   uint
+	Providers      []providers.Provider
+	threads        uint
+	Checkpoint     *checkpoint.Checkpoint
+	CheckpointFile string
 }
 
 // Init initializes the runner
 func (r *Runner) Init(c *providers.Config, providers []string, filters providers.Filters) error {
 	r.threads = c.Threads
+	r.Checkpoint = checkpoint.New()
 	for _, name := range providers {
 		switch name {
 		case "urlscan":
@@ -73,12 +77,48 @@ func (r *Runner) worker(ctx context.Context, workChan chan Work, results chan st
 		select {
 		case <-ctx.Done():
 			return
+
 		case work, ok := <-workChan:
 			if !ok {
 				return
 			}
+
+			if ctx.Err() != nil {
+				return
+			}
+
+			if r.Checkpoint.IsCompleted(work.domain, work.provider.Name()) {
+				logrus.Debugf("Skipping completed job: %s - %s",
+					work.domain, work.provider.Name())
+				continue
+			}
+
+			logrus.Infof("Starting job: %s - %s",
+				work.domain, work.provider.Name())
+
 			if err := work.Do(ctx, results); err != nil {
-				logrus.WithField("provider", work.provider.Name()).Warnf("%s - %v", work.domain, err)
+				if ctx.Err() != nil {
+					return
+				}
+
+				logrus.WithField("provider", work.provider.Name()).Warnf(
+    "Job failed: %s - %v", work.domain, err)
+				continue
+			}
+
+			r.Checkpoint.MarkCompleted(work.domain, work.provider.Name())
+
+			logrus.Infof("Completed job: %s - %s",
+				work.domain, work.provider.Name())
+
+			if r.CheckpointFile != "" {
+				if err := r.Checkpoint.Save(r.CheckpointFile); err != nil {
+					logrus.WithError(err).Errorf(
+						"failed to persist completed job %s - %s",
+						work.domain,
+						work.provider.Name(),
+					)
+				}
 			}
 		}
 	}
