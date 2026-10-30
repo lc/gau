@@ -94,15 +94,21 @@ func main() {
 			log.Fatalf("error writing results: %v\n", err)
 		}
 	}(out, config.JSON)
-	ctx, cancel := signal.NotifyContext(
-		context.Background(),
-		os.Interrupt,
-		syscall.SIGTERM,
-	)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signalChan)
+
 	go func() {
-		<-ctx.Done()
-		log.Warn("Interrupt signal received! Shutting down...")
+		select {
+		case sig := <-signalChan:
+			log.Warnf("Received signal %s. Shutting down...", sig)
+			cancel()
+		case <-ctx.Done():
+			return
+		}
 	}()
 	workChan := make(chan runner.Work)
 	gau.Start(ctx, workChan, results)

@@ -2,6 +2,8 @@ package providers
 
 import (
 	"context"
+	"github.com/lc/gau/v2/pkg/checkpoint"
+	"net/http"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/valyala/fasthttp"
@@ -27,6 +29,9 @@ type Config struct {
 	IncludeSubdomains bool
 	RemoveParameters  bool
 	Client            *fasthttp.Client
+	HTTPClient        *http.Client
+	Checkpoint        *checkpoint.Checkpoint
+	CheckpointFile    string
 	Providers         []string
 	Blacklist         mapset.Set[string]
 	Output            string
